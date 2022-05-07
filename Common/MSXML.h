@@ -117,9 +117,6 @@ inline HRESULT WINAPI getPrivateProfileInt(
 
 		_bstr_t value = (_bstr_t)var;
 
-		MY_TRACE_WSTR((BSTR)value);
-		MY_TRACE_STR((LPCTSTR)value);
-
 		if (!(BSTR)value)
 			return S_FALSE;
 
@@ -137,8 +134,6 @@ template<class T>
 inline HRESULT WINAPI getPrivateProfileInt(
 	const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, T& outValue, int radix = 0)
 {
-	MY_TRACE_WSTR(name);
-
 	return getPrivateProfileInt(element->getAttribute(name), outValue, radix);
 }
 
@@ -531,7 +526,7 @@ inline HRESULT WINAPI getPrivateProfileLabel(
 	{
 		if (::lstrcmpW(array[i].label, value) == 0)
 		{
-			MY_TRACE_WSTR(array[i].label);
+//			MY_TRACE_WSTR(array[i].label);
 			outValue = array[i].value;
 			return S_OK;
 		}

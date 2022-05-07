@@ -8,10 +8,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{C24342
 		Common\AviUtlInternal.h = Common\AviUtlInternal.h
 		Common\Dialog.h = Common\Dialog.h
 		Common\FileUpdateChecker.h = Common\FileUpdateChecker.h
+		Common\Gdiplus.h = Common\Gdiplus.h
 		Common\Hook.h = Common\Hook.h
+		Common\MFC.h = Common\MFC.h
 		Common\MSXML.h = Common\MSXML.h
 		Common\Profile.h = Common\Profile.h
 		Common\Tracer.h = Common\Tracer.h
+		Common\Tracer2.h = Common\Tracer2.h
+		Common\WinUtility.h = Common\WinUtility.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{54432672-47D8-4419-A871-6D67CAFB5925}"

@@ -24,6 +24,9 @@ private:
 	int* m_layerVisibleCount = 0; // UI 上で表示されているレイヤーの数。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
 
+	typedef LRESULT (CDECL* Type_ExeditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, void *editp, FILTER *fp);
+	typedef LRESULT (WINAPI* Type_SettingDialogProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
 	typedef __int64 (CDECL* Type_FrameToX)(int frame);
 	Type_FrameToX m_FrameToX = 0;
 
@@ -112,6 +115,23 @@ public:
 		return TRUE;
 	}
 
+	Type_ExeditWindowProc HookExeditWindowProc(FILTER* fp, Type_ExeditWindowProc proc)
+	{
+		using Type = decltype(FILTER::func_WndProc);
+
+		FILTER* exedit = GetFilter(fp, "拡張編集");
+		Type_ExeditWindowProc retValue = (Type_ExeditWindowProc)exedit->func_WndProc;
+		exedit->func_WndProc = (Type)proc;
+		return retValue;
+	}
+
+	Type_SettingDialogProc HookSettingDialogProc(Type_SettingDialogProc proc)
+	{
+		return writeAbsoluteAddress(m_exedit + 0x2E800 + 4, proc);
+	}
+
+public:
+
 	DWORD GetExedit()
 	{
 		return m_exedit;
@@ -175,12 +195,12 @@ public:
 		return m_nextObject[objectIndex];
 	}
 
-	int Exedit_GetSelectedObjects(int i)
+	int GetSelectedObjects(int i)
 	{
 		return m_selectedObjects[i];
 	}
 
-	int Exedit_GetSelectedObjectsCount()
+	int GetSelectedObjectsCount()
 	{
 		return *m_selectedObjectsCount;
 	}
@@ -292,13 +312,6 @@ public:
 
 public:
 
-	WNDPROC HookSettingDialogProc(WNDPROC wndProc)
-	{
-		return writeAbsoluteAddress(m_exedit + 0x2E800 + 4, wndProc);
-	}
-
-public:
-
 	Type_FrameToX GetFrameToX()
 	{
 		return m_FrameToX;
@@ -363,6 +376,8 @@ public:
 	{
 		return m_SaveFilterAlias;
 	}
+
+public:
 
 	__int64 FrameToX(int frame)
 	{
