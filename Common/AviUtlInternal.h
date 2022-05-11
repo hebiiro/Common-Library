@@ -9,6 +9,7 @@ private:
 	HWND* m_settingDialog = 0; // 設定ダイアログ。
 	ExEdit::Object** m_objectTable = 0;
 	ExEdit::Filter** m_filterTable = 0;
+	int* m_currentSceneIndex = 0; // カレントシーンのインデックス。
 	int* m_objectIndex = 0; // カレントオブジェクトのインデックスへのポインタ。
 	int* m_filterIndex = 0; // カレントフィルタのインデックスへのポインタ。
 	int* m_objectCount = 0; // オブジェクトの数。
@@ -22,6 +23,8 @@ private:
 	int* m_layerWidth = 0; // レイヤーの幅。
 	int* m_layerHeight = 0; // レイヤーの高さ。
 	int* m_layerVisibleCount = 0; // UI 上で表示されているレイヤーの数。
+	int* m_aviutlFrameNumber = 0; // AviUtl の最終フレーム番号。
+	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
 
 	typedef LRESULT (CDECL* Type_ExeditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, void *editp, FILTER *fp);
@@ -79,6 +82,7 @@ public:
 		m_settingDialog = (HWND*)(m_exedit + 0x1539C8);
 		m_objectTable = (ExEdit::Object**)(m_exedit + 0x168FA8);
 		m_filterTable = (ExEdit::Filter**)(m_exedit + 0x187C98);
+		m_currentSceneIndex = (int*)(m_exedit + 0x1A5310);
 		m_objectIndex = (int*)(m_exedit + 0x177A10);
 		m_filterIndex = (int*)(m_exedit + 0x14965C);
 		m_objectCount = (int*)(m_exedit + 0x146250);
@@ -92,6 +96,9 @@ public:
 		m_layerWidth = (int*)(m_exedit + 0x1A52FC);
 		m_layerHeight = (int*)(m_exedit + 0xA3E20);
 		m_layerVisibleCount = (int*)(m_exedit + 0xA3FBC);
+		m_aviutlFrameNumber = (int*)(m_exedit + 0x14D3A0);
+		m_exeditFrameNumber = (int*)(m_exedit + 0x1A5318);
+
 		m_settingDialogMenu[0] = (HMENU*)(m_exedit + 0x158D20); // 映像フィルタオブジェクト
 		m_settingDialogMenu[1] = (HMENU*)(m_exedit + 0x158D24); // 音声メディアオブジェクト
 		m_settingDialogMenu[2] = (HMENU*)(m_exedit + 0x158D2C); // 映像メディアオブジェクト＆グループ制御
@@ -145,6 +152,11 @@ public:
 	HWND GetSettingDialog()
 	{
 		return *m_settingDialog;
+	}
+
+	int GetCurrentSceneIndex()
+	{
+		return *m_currentSceneIndex;
 	}
 
 	int GetCurrentObjectIndex()
@@ -223,6 +235,16 @@ public:
 	int GetLayerVisibleCount()
 	{
 		return *m_layerVisibleCount;
+	}
+
+	int GetAviUtlFrameNumber()
+	{
+		return *m_aviutlFrameNumber;
+	}
+
+	int GetExeditFrameNumber()
+	{
+		return *m_exeditFrameNumber;
 	}
 
 	HMENU GetSettingDialogMenu(int index)

@@ -11,7 +11,7 @@ public:
 
 	FileUpdateChecker(LPCWSTR filePath)
 	{
-		MY_TRACE(_T("FileUpdateChecker::FileUpdateChecker(%ws)\n"), filePath);
+//		MY_TRACE(_T("FileUpdateChecker::FileUpdateChecker(%ws)\n"), filePath);
 
 		m_filePath = filePath;
 		getFileTime(filePath, &m_fileTime);
@@ -63,19 +63,19 @@ public:
 
 	FileUpdateCheckers()
 	{
-		MY_TRACE(_T("FileUpdateCheckers::FileUpdateCheckers()\n"));
+//		MY_TRACE(_T("FileUpdateCheckers::FileUpdateCheckers()\n"));
 	}
 
 	void clear()
 	{
-		MY_TRACE(_T("FileUpdateCheckers::clear()\n"));
+//		MY_TRACE(_T("FileUpdateCheckers::clear()\n"));
 
 		m_items.clear();
 	}
 
 	void add(LPCWSTR filePath)
 	{
-		MY_TRACE(_T("FileUpdateCheckers::add(%ws)\n"), filePath);
+//		MY_TRACE(_T("FileUpdateCheckers::add(%ws)\n"), filePath);
 
 		FileUpdateCheckerPtr ptr(new FileUpdateChecker(filePath));
 		m_items.push_back(ptr);

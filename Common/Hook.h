@@ -33,9 +33,17 @@
 
 //---------------------------------------------------------------------
 
+// コードを書き換える
+inline void writeCode(DWORD address, const BYTE* code, int c)
+{
+	// コードを書き換える。そのあと命令キャッシュをフラッシュする。
+	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, code, c, NULL);
+	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, c);
+}
+
 // CALL を書き換える
 template<class T>
-void hookCall(DWORD address, T hookProc)
+inline void hookCall(DWORD address, T hookProc)
 {
 	BYTE code[5];
 	code[0] = 0xE8; // CALL
@@ -48,7 +56,7 @@ void hookCall(DWORD address, T hookProc)
 
 // CALL を書き換える
 template<class T>
-void hookAbsoluteCall(DWORD address, T& hookProc)
+inline void hookAbsoluteCall(DWORD address, T& hookProc)
 {
 	BYTE code[6];
 	code[0] = 0xE8; // CALL
@@ -62,7 +70,7 @@ void hookAbsoluteCall(DWORD address, T& hookProc)
 
 // 絶対アドレスを書き換える。
 template<class T>
-T writeAbsoluteAddress(DWORD address, T x)
+inline T writeAbsoluteAddress(DWORD address, T x)
 {
 	// 絶対アドレスから読み込む。
 	T retValue = 0;
