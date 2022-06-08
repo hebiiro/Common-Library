@@ -1,5 +1,61 @@
 #pragma once
 
+class CUxDC : public CDC
+{
+public:
+
+	HPAINTBUFFER m_pb;
+
+	CUxDC(CPaintDC& dc, BP_BUFFERFORMAT format = BPBF_COMPATIBLEBITMAP)
+	{
+		BP_PAINTPARAMS pp = { sizeof(pp) };
+		HDC mdc = 0;
+		m_pb = ::BeginBufferedPaint(dc, &dc.m_ps.rcPaint, format, &pp, &mdc);
+		Attach(mdc);
+	}
+
+	virtual ~CUxDC()
+	{
+		Detach();
+		::EndBufferedPaint(m_pb, TRUE);
+	}
+
+	BOOL isValid() const
+	{
+		return !!m_pb;
+	}
+};
+
+class CDoubleBufferPaintDC : public CDC
+{
+public:
+
+	CPaintDC m_dc;
+	CBitmap m_bitmap;
+	CBitmap* m_oldBitmap;
+
+	CDoubleBufferPaintDC(CWnd* wnd)
+		: m_dc(wnd)
+	{
+		int w = m_dc.m_ps.rcPaint.right - m_dc.m_ps.rcPaint.left;
+		int h = m_dc.m_ps.rcPaint.bottom - m_dc.m_ps.rcPaint.top;
+
+		CreateCompatibleDC(&m_dc);
+		m_bitmap.CreateCompatibleBitmap(&m_dc, w, h);
+		m_oldBitmap = SelectObject(&m_bitmap);
+	}
+
+	~CDoubleBufferPaintDC()
+	{
+		int w = m_dc.m_ps.rcPaint.right - m_dc.m_ps.rcPaint.left;
+		int h = m_dc.m_ps.rcPaint.bottom - m_dc.m_ps.rcPaint.top;
+
+		m_dc.BitBlt(0, 0, w, h, this, 0, 0, SRCCOPY);
+
+		SelectObject(m_oldBitmap);
+	}
+};
+
 class COffscreenDC : public CDC
 {
 public:

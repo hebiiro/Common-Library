@@ -11,6 +11,8 @@ class MyPoint : public Point
 {
 public:
 
+	MyPoint(const POINT& point) : Point(point.x, point.y){}
+
 	void SetPoint(int x, int y)
 	{
 		this->X = x;
@@ -112,6 +114,14 @@ public:
 class MyColor : public Color
 {
 public:
+
+	MyColor(COLORREF color)
+		: Color(
+			GetRValue(color),
+			GetGValue(color),
+			GetBValue(color))
+	{
+	}
 
 	MyColor(BYTE alpha, COLORREF color)
 		: Color(

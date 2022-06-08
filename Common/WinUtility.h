@@ -12,6 +12,31 @@ inline int getHeight(const RECT& rc)
 	return rc.bottom - rc.top;
 }
 
+inline int getCenterX(const RECT& rc)
+{
+	return (rc.left + rc.right) / 2;
+}
+
+inline int getCenterY(const RECT& rc)
+{
+	return (rc.top + rc.bottom) / 2;
+}
+
+inline POINT LP2PT(LPARAM lParam)
+{
+	POINT pt =
+	{
+		(short)LOWORD(lParam),
+		(short)HIWORD(lParam),
+	};
+	return pt;
+}
+
+inline LPARAM PT2LP(POINT pt)
+{
+	return MAKELPARAM(pt.x, pt.y);
+}
+
 inline void GetMonitorRect(POINT point, RECT& rect)
 {
 	// ウィンドウが表示されているディスプレイ情報を取得する
@@ -30,6 +55,18 @@ inline void GetMonitorRect(HWND hWnd, RECT& rect)
 	monitor_info.cbSize = sizeof(monitor_info);
 	::GetMonitorInfo(monitor, &monitor_info);
 	rect = monitor_info.rcWork;
+}
+
+inline void getWindowRectFromClientRect(HWND hwnd, LPRECT rc)
+{
+	RECT rcWindow; ::GetWindowRect(hwnd, &rcWindow);
+	RECT rcClient; ::GetClientRect(hwnd, &rcClient);
+	::MapWindowPoints(hwnd, 0, (POINT*)&rcClient, 2);
+
+	rc->left += rcWindow.left - rcClient.left;
+	rc->top += rcWindow.top - rcClient.top;
+	rc->right += rcWindow.right - rcClient.right;
+	rc->bottom += rcWindow.bottom - rcClient.bottom;
 }
 
 //--------------------------------------------------------------------
@@ -135,6 +172,59 @@ public:
 	HANDLE* operator&()
 	{
 		return &m_handle;
+	}
+};
+
+//--------------------------------------------------------------------
+
+class IconHolder
+{
+private:
+
+	HICON m_icon;
+
+public:
+
+	IconHolder()
+	{
+		m_icon = 0;
+	}
+
+	IconHolder(HICON icon)
+	{
+		m_icon = icon;
+	}
+
+	~IconHolder()
+	{
+		if (m_icon) ::DestroyIcon(m_icon);
+	}
+
+private:
+
+	IconHolder(const IconHolder& x)
+	{
+	}
+
+public:
+
+	operator HICON() const
+	{
+		return m_icon;
+	}
+
+	IconHolder& operator=(HICON icon)
+	{
+		if (m_icon) ::DestroyIcon(m_icon);
+
+		m_icon = icon;
+
+		return *this;
+	}
+
+	HICON* operator&()
+	{
+		return &m_icon;
 	}
 };
 
@@ -367,63 +457,43 @@ public:
 	}
 };
 
-//--------------------------------------------------------------------
-
-class CFileUpdateChecker
+class CriticalSection : public Sync
 {
-private:
+public:
 
-	WCHAR m_filePath[MAX_PATH];
-	FILETIME m_fileTime;
+	CriticalSection(BOOL doInit)
+	{
+		if (doInit) init();
+	}
+
+	virtual ~CriticalSection()
+	{
+		::DeleteCriticalSection(&m_cs);
+	}
+
+protected:
+
+	CRITICAL_SECTION m_cs;
 
 public:
 
-	CFileUpdateChecker(LPCWSTR filePath)
+	void init()
 	{
-		MY_TRACE(_T("CFileUpdateChecker::CFileUpdateChecker(%ws)\n"), filePath);
-
-		::StringCbCopyW(m_filePath, sizeof(m_filePath), filePath);
-		getFileTime(filePath, &m_fileTime);
+		::InitializeCriticalSection(&m_cs);
 	}
 
-	LPCWSTR getFilePath() const
+	virtual DWORD lock(DWORD timeOut = INFINITE)
 	{
-		return m_filePath;
+		::EnterCriticalSection(&m_cs);
+		return WAIT_OBJECT_0;
 	}
 
-	BOOL isFileUpdated()
+	virtual BOOL unlock()
 	{
-//		MY_TRACE(_T("CFileUpdateChecker::isFileUpdated()\n"));
+		::LeaveCriticalSection(&m_cs);
 
-		FILETIME fileTime;
-
-		if (!getFileTime(m_filePath, &fileTime))
-			return FALSE;
-
-		if (!::CompareFileTime(&m_fileTime, &fileTime))
-			return FALSE;
-
-		m_fileTime = fileTime;
-
-		return TRUE;
-	}
-
-	static BOOL getFileTime(LPCWSTR filePath, FILETIME* fileTime)
-	{
-		HANDLE file = ::CreateFileW(filePath, GENERIC_READ,
-			FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
-
-		if (file == INVALID_HANDLE_VALUE)
-			return FALSE;
-
-		BOOL retValue = ::GetFileTime(file, 0, 0, fileTime);
-
-		::CloseHandle(file);
-
-		return retValue;
+		return true;
 	}
 };
-
-typedef std::shared_ptr<CFileUpdateChecker> CFileUpdateCheckerPtr;
 
 //--------------------------------------------------------------------

@@ -509,6 +509,50 @@ inline HRESULT WINAPI getPrivateProfileTime(
 	return getPrivateProfileTime(element->getAttribute(name), outValue);
 }
 
+template<class T>
+inline HRESULT WINAPI getPrivateProfileFileName(
+	const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, T& outValue)
+{
+	try
+	{
+		// 属性を取得する。
+		_variant_t var = element->getAttribute(name);
+
+		if (var.vt == VT_NULL)
+			return S_FALSE; // 属性が無効だった。
+
+		// 文字列に変換する。
+		_bstr_t value = (_bstr_t)var;
+
+		if (!(BSTR)value || ::lstrlenW(value) == 0)
+			return S_FALSE; // 文字列が無効だった。
+
+		// 元のドキュメントの URL を取得する。
+		_bstr_t url = element->ownerDocument->url;
+//		MY_TRACE_WSTR((BSTR)url);
+
+		// 元のドキュメントのフォルダを取得する。
+		DWORD c = MAX_PATH;
+		WCHAR folder[MAX_PATH] = {};
+		::PathCreateFromUrlW(url, folder, &c, 0);
+		::PathRemoveFileSpecW(folder);
+//		MY_TRACE_WSTR(folder);
+
+		WCHAR fileName[MAX_PATH] = {};
+		::StringCbCopyW(fileName, sizeof(fileName), folder);
+		::PathAppendW(fileName, value);
+//		MY_TRACE_WSTR(fileName);
+
+		outValue = fileName;
+
+		return S_OK;
+	}
+	catch (_com_error& e)
+	{
+		return e.Error();
+	}
+}
+
 template<class T, class A>
 inline HRESULT WINAPI getPrivateProfileLabel(
 	const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, T& outValue, const A& array)

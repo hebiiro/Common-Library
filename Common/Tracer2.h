@@ -1,20 +1,6 @@
 ﻿#pragma once
 
-#if 0
-
-void trace_init(HINSTANCE instance, LPCTSTR name)
-{
-}
-
-void trace_term()
-{
-}
-
-void ___outputLog(LPCTSTR text, LPCTSTR output)
-{
-}
-
-#else
+#ifdef _DEBUG
 
 HANDLE g_traceFile = 0;
 
@@ -66,6 +52,20 @@ void ___outputLog(LPCTSTR text, LPCTSTR output)
 	DWORD cbLength = (DWORD)(::lstrlen(output) * sizeof(TCHAR));
 	DWORD writeSize = 0;
 	::WriteFile(g_traceFile, output, cbLength, &writeSize, 0);
+}
+
+#else
+
+void trace_init(HINSTANCE instance, LPCTSTR name)
+{
+}
+
+void trace_term()
+{
+}
+
+void ___outputLog(LPCTSTR text, LPCTSTR output)
+{
 }
 
 #endif

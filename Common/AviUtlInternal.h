@@ -4,7 +4,16 @@ class AviUtlInternal
 {
 private:
 
+	DWORD m_aviutl = 0;
+	EXFUNC* m_exfunc = 0;
+
+	typedef BOOL (CDECL* Type_get_sys_info)(void* editp, SYS_INFO* sip);
+	Type_get_sys_info m_get_sys_info = 0;
+
+public:
+
 	DWORD m_exedit = 0;
+	HWND* m_aviutlWindow = 0; // AviUtl ウィンドウ。
 	HWND* m_exeditWindow = 0; // 拡張編集ウィンドウ。
 	HWND* m_settingDialog = 0; // 設定ダイアログ。
 	ExEdit::Object** m_objectTable = 0;
@@ -71,13 +80,27 @@ private:
 
 public:
 
-	BOOL init()
+	BOOL initAviUtlAddress()
+	{
+		m_aviutl = (DWORD)::GetModuleHandle(0);
+
+		if (!m_aviutl)
+			return FALSE;
+
+		m_exfunc = (EXFUNC*)(m_aviutl + 0xA8C78);
+		m_get_sys_info = (Type_get_sys_info)(m_aviutl + 0x22120);
+
+		return TRUE;
+	}
+
+	BOOL initExEditAddress()
 	{
 		m_exedit = (DWORD)::GetModuleHandle(_T("exedit.auf"));
 
 		if (!m_exedit)
 			return FALSE;
 
+		m_aviutlWindow = (HWND*)(m_exedit + 0x135C6C);
 		m_exeditWindow = (HWND*)(m_exedit + 0x177A44);
 		m_settingDialog = (HWND*)(m_exedit + 0x1539C8);
 		m_objectTable = (ExEdit::Object**)(m_exedit + 0x168FA8);
@@ -137,11 +160,26 @@ public:
 		return writeAbsoluteAddress(m_exedit + 0x2E800 + 4, proc);
 	}
 
+public: // AviUtl の変数。
+
+	DWORD GetAviUtl() { return m_aviutl; }
+	EXFUNC* GetExFunc() { return m_exfunc; }
+
+public: // AviUtl の関数。
+
+	Type_get_sys_info Get_get_sys_info() { return m_get_sys_info; }
+	BOOL get_sys_info(void* editp, SYS_INFO* sip) { return m_get_sys_info(editp, sip); }
+
 public:
 
 	DWORD GetExedit()
 	{
 		return m_exedit;
+	}
+
+	HWND GetAviUtlWindow()
+	{
+		return *m_aviutlWindow;
 	}
 
 	HWND GetExeditWindow()

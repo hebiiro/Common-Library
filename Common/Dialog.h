@@ -81,6 +81,33 @@ public:
 		close(IDCANCEL);
 	}
 
+	virtual INT_PTR onDlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+	{
+		switch (message)
+		{
+		case WM_COMMAND:
+			{
+				switch (LOWORD(wParam))
+				{
+				case IDOK:
+					{
+						onOK();
+						return TRUE;
+					}
+				case IDCANCEL:
+					{
+						onCancel();
+						return TRUE;
+					}
+				}
+
+				break;
+			}
+		}
+
+		return FALSE;
+	}
+
 	static Dialog* getThis(HWND  hwnd)
 	{
 		return (Dialog*)::GetProp(hwnd, PROP_NAME);
@@ -88,29 +115,15 @@ public:
 
 	static INT_PTR CALLBACK dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
+		Dialog* dialog = getThis(hwnd);
+
+		if (dialog) return dialog->onDlgProc(hwnd, message, wParam, lParam);
+
 		switch (message)
 		{
 		case WM_INITDIALOG:
 			{
 				::SetProp(hwnd, PROP_NAME, (HANDLE)lParam);
-				break;
-			}
-		case WM_COMMAND:
-			{
-				switch (LOWORD(wParam))
-				{
-				case IDOK:
-					{
-						getThis(hwnd)->onOK();
-						return TRUE;
-					}
-				case IDCANCEL:
-					{
-						getThis(hwnd)->onCancel();
-						return TRUE;
-					}
-				}
-
 				break;
 			}
 		}
