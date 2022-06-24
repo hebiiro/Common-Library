@@ -602,15 +602,15 @@ inline HRESULT getPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element,
 		else
 			wp.showCmd = cmdShow;
 
-		getPrivateProfileInt(element, L"minX", wp.ptMinPosition.x);
-		getPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
-		getPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
-		getPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
-
 		getPrivateProfileInt(element, L"left", wp.rcNormalPosition.left);
 		getPrivateProfileInt(element, L"top", wp.rcNormalPosition.top);
 		getPrivateProfileInt(element, L"right", wp.rcNormalPosition.right);
 		getPrivateProfileInt(element, L"bottom", wp.rcNormalPosition.bottom);
+
+		getPrivateProfileInt(element, L"minX", wp.ptMinPosition.x);
+		getPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
+		getPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
+		getPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
 	}
 
 	if (!::SetWindowPlacement(hwnd, &wp))
@@ -694,15 +694,15 @@ inline HRESULT setPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element_
 
 	setPrivateProfileInt(element, L"flags", (cmdShow == -1) ? wp.showCmd : cmdShow);
 
-	setPrivateProfileInt(element, L"minX", wp.ptMinPosition.x);
-	setPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
-	setPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
-	setPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
-
 	setPrivateProfileInt(element, L"left", wp.rcNormalPosition.left);
 	setPrivateProfileInt(element, L"top", wp.rcNormalPosition.top);
 	setPrivateProfileInt(element, L"right", wp.rcNormalPosition.right);
 	setPrivateProfileInt(element, L"bottom", wp.rcNormalPosition.bottom);
+
+	setPrivateProfileInt(element, L"minX", wp.ptMinPosition.x);
+	setPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
+	setPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
+	setPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
 
 	return S_OK;
 }

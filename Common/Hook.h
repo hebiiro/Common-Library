@@ -126,3 +126,80 @@ inline void castAddress(T& x, DWORD address)
 }
 
 //---------------------------------------------------------------------
+
+template<class T>
+T hookImportFunc(HMODULE module, LPCSTR funcName, T func)
+{
+	struct Hooker
+	{
+		LPCSTR m_funcName;
+		T m_newFunc;
+		T m_oldFunc;
+
+		static BOOL CALLBACK detour(
+			_In_opt_ PVOID pContext,
+			_In_ DWORD nOrdinal,
+			_In_opt_ LPCSTR pszFunc,
+			_In_opt_ PVOID* ppvFunc)
+		{
+			Hooker* hooker = (Hooker*)pContext;
+
+			MY_TRACE_STR(pszFunc);
+
+			if (!pszFunc) return TRUE;
+			if (::lstrcmpA(pszFunc, hooker->m_funcName) != 0) return TRUE;
+
+			hooker->m_oldFunc = (T)*ppvFunc;
+			*ppvFunc = hooker->m_newFunc;
+
+			return FALSE;
+		}
+
+	} hooker = { funcName, func };
+
+	DetourEnumerateImportsEx(module, &hooker, 0, hooker.detour);
+
+	return hooker.m_oldFunc;
+}
+
+//---------------------------------------------------------------------
+
+template<class T>
+T rewriteFunction(DWORD base, LPCSTR funcName, T func)
+{
+	// IMAGE_IMPORT_DESCRIPTOR を取得する。
+	PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)base;
+	PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)((DWORD)dos + dos->e_lfanew);
+	PIMAGE_IMPORT_DESCRIPTOR importDesc = (PIMAGE_IMPORT_DESCRIPTOR)
+		((DWORD)dos + nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+
+	for (; importDesc->Name; importDesc++)
+	{
+		// IMAGE_THUNK_DATA を取得する。
+		PIMAGE_THUNK_DATA firstThunk = (PIMAGE_THUNK_DATA)(base + importDesc->FirstThunk);
+		PIMAGE_THUNK_DATA originalFirstThunk = (PIMAGE_THUNK_DATA)(base + importDesc->OriginalFirstThunk);
+
+		for (;firstThunk->u1.Function; firstThunk++, originalFirstThunk++)
+		{
+			// オーディナルかチェックする。
+			if (IMAGE_SNAP_BY_ORDINAL(originalFirstThunk->u1.Ordinal)) continue;
+
+			// 関数の名前を取得する。
+			PIMAGE_IMPORT_BY_NAME importName = (PIMAGE_IMPORT_BY_NAME)(base + originalFirstThunk->u1.AddressOfData);
+
+			// 関数の名前をチェックする。
+			if (::lstrcmpA((LPCSTR)importName->Name, funcName) != 0) continue;
+
+			// 元の関数を取得する。
+			T retValue = 0;
+			::ReadProcessMemory(::GetCurrentProcess(), &firstThunk->u1.Function, &retValue, sizeof(T), NULL);
+
+			// 関数を書き換える。
+			::WriteProcessMemory(::GetCurrentProcess(), &firstThunk->u1.Function, &func, sizeof(T), NULL);
+		}
+	}
+
+	return NULL;
+}
+
+//---------------------------------------------------------------------

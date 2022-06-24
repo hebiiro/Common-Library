@@ -36,7 +36,7 @@ public:
 	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
 
-	typedef LRESULT (CDECL* Type_ExeditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, void *editp, FILTER *fp);
+	typedef LRESULT (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, void *editp, FILTER *fp);
 	typedef LRESULT (WINAPI* Type_SettingDialogProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	typedef __int64 (CDECL* Type_FrameToX)(int frame);
@@ -145,12 +145,12 @@ public:
 		return TRUE;
 	}
 
-	Type_ExeditWindowProc HookExeditWindowProc(FILTER* fp, Type_ExeditWindowProc proc)
+	Type_ExEditWindowProc HookExEditWindowProc(FILTER* fp, Type_ExEditWindowProc proc)
 	{
 		using Type = decltype(FILTER::func_WndProc);
 
 		FILTER* exedit = GetFilter(fp, "拡張編集");
-		Type_ExeditWindowProc retValue = (Type_ExeditWindowProc)exedit->func_WndProc;
+		Type_ExEditWindowProc retValue = (Type_ExEditWindowProc)exedit->func_WndProc;
 		exedit->func_WndProc = (Type)proc;
 		return retValue;
 	}
@@ -172,7 +172,7 @@ public: // AviUtl の関数。
 
 public:
 
-	DWORD GetExedit()
+	DWORD GetExEdit()
 	{
 		return m_exedit;
 	}
@@ -182,7 +182,7 @@ public:
 		return *m_aviutlWindow;
 	}
 
-	HWND GetExeditWindow()
+	HWND GetExEditWindow()
 	{
 		return *m_exeditWindow;
 	}
@@ -280,7 +280,7 @@ public:
 		return *m_aviutlFrameNumber;
 	}
 
-	int GetExeditFrameNumber()
+	int GetExEditFrameNumber()
 	{
 		return *m_exeditFrameNumber;
 	}

@@ -4,7 +4,7 @@
 
 HANDLE g_traceFile = 0;
 
-void trace_init(HINSTANCE instance, LPCTSTR name)
+void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 {
 	// dll\$dll@exe[name].txt
 
@@ -35,11 +35,15 @@ void trace_init(HINSTANCE instance, LPCTSTR name)
 
 	g_traceFile = ::CreateFile(reportFilePath, GENERIC_WRITE,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 0, 0);
-/*
-	BYTE bom[] = { 0xFF, 0xFE };
-	DWORD writeSize = 0;
-	::WriteFile(g_traceFile, bom, sizeof(bom), &writeSize, 0);
-*/
+
+#ifdef _UNICODE
+	if (addBom)
+	{
+		BYTE bom[] = { 0xFF, 0xFE };
+		DWORD writeSize = 0;
+		::WriteFile(g_traceFile, bom, sizeof(bom), &writeSize, 0);
+	}
+#endif
 }
 
 void trace_term()
@@ -56,7 +60,7 @@ void ___outputLog(LPCTSTR text, LPCTSTR output)
 
 #else
 
-void trace_init(HINSTANCE instance, LPCTSTR name)
+void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 {
 }
 

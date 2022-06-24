@@ -57,16 +57,66 @@ inline void GetMonitorRect(HWND hWnd, RECT& rect)
 	rect = monitor_info.rcWork;
 }
 
-inline void getWindowRectFromClientRect(HWND hwnd, LPRECT rc)
+inline void clientToWindow(HWND hwnd, LPRECT rc)
 {
 	RECT rcWindow; ::GetWindowRect(hwnd, &rcWindow);
 	RECT rcClient; ::GetClientRect(hwnd, &rcClient);
-	::MapWindowPoints(hwnd, 0, (POINT*)&rcClient, 2);
+	::MapWindowPoints(hwnd, 0, (LPPOINT)&rcClient, 2);
 
 	rc->left += rcWindow.left - rcClient.left;
 	rc->top += rcWindow.top - rcClient.top;
 	rc->right += rcWindow.right - rcClient.right;
 	rc->bottom += rcWindow.bottom - rcClient.bottom;
+}
+
+inline void windowToClient(HWND hwnd, LPRECT rc)
+{
+	RECT rcWindow; ::GetWindowRect(hwnd, &rcWindow);
+	RECT rcClient; ::GetClientRect(hwnd, &rcClient);
+	::MapWindowPoints(hwnd, 0, (LPPOINT)&rcClient, 2);
+
+	rc->left -= rcWindow.left - rcClient.left;
+	rc->top -= rcWindow.top - rcClient.top;
+	rc->right -= rcWindow.right - rcClient.right;
+	rc->bottom -= rcWindow.bottom - rcClient.bottom;
+}
+
+//--------------------------------------------------------------------
+
+inline DWORD getStyle(HWND hwnd)
+{
+	return ::GetWindowLong(hwnd, GWL_STYLE);
+}
+
+inline DWORD setStyle(HWND hwnd, DWORD style)
+{
+	return ::SetWindowLong(hwnd, GWL_STYLE, style);
+}
+
+inline DWORD modifyStyle(HWND hwnd, DWORD remove, DWORD add)
+{
+	DWORD style = getStyle(hwnd);
+	style &= ~remove;
+	style |= add;
+	return setStyle(hwnd, style);
+}
+
+inline DWORD getExStyle(HWND hwnd)
+{
+	return ::GetWindowLong(hwnd, GWL_EXSTYLE);
+}
+
+inline DWORD setExStyle(HWND hwnd, DWORD exStyle)
+{
+	return ::SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+}
+
+inline DWORD modifyExStyle(HWND hwnd, DWORD remove, DWORD add)
+{
+	DWORD exStyle = getExStyle(hwnd);
+	exStyle &= ~remove;
+	exStyle |= add;
+	return setExStyle(hwnd, exStyle);
 }
 
 //--------------------------------------------------------------------
