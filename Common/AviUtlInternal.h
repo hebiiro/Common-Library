@@ -5,9 +5,9 @@ class AviUtlInternal
 private:
 
 	DWORD m_aviutl = 0;
-	EXFUNC* m_exfunc = 0;
+	AviUtl::ExFunc* m_exfunc = 0;
 
-	typedef BOOL (CDECL* Type_get_sys_info)(void* editp, SYS_INFO* sip);
+	typedef BOOL (CDECL* Type_get_sys_info)(void* editp, AviUtl::SysInfo* sip);
 	Type_get_sys_info m_get_sys_info = 0;
 
 public:
@@ -27,16 +27,18 @@ public:
 	BYTE** m_objectExdata = 0; // オブジェクト拡張データへのポインタ。
 	int* m_nextObject = 0; // 次のオブジェクトの配列。
 	int* m_selectedObjects = 0; // 選択オブジェクトの配列。
-	int* m_selectedObjectsCount = 0; // 選択オブジェクトの数。
-	void** m_editp = 0; // editp へのポインタ。
+	int* m_selectedObjectCount = 0; // 選択オブジェクトの数。
+	ExEdit::SceneSetting* m_sceneSettingTable = 0; // シーン設定の配列。
+	AviUtl::EditHandle** m_editp = 0; // editp へのポインタ。
 	int* m_layerWidth = 0; // レイヤーの幅。
 	int* m_layerHeight = 0; // レイヤーの高さ。
 	int* m_layerVisibleCount = 0; // UI 上で表示されているレイヤーの数。
+	char** m_layerNameArray = 0; // レイヤー名の配列。
 	int* m_aviutlFrameNumber = 0; // AviUtl の最終フレーム番号。
 	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
 
-	typedef LRESULT (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, void *editp, FILTER *fp);
+	typedef LRESULT (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, AviUtl::EditHandle* editp, AviUtl::FilterPlugin *fp);
 	typedef LRESULT (WINAPI* Type_SettingDialogProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	typedef __int64 (CDECL* Type_FrameToX)(int frame);
@@ -78,6 +80,18 @@ public:
 	typedef BOOL (CDECL* Type_SaveFilterAlias)(int objectIndex, int filterIndex, LPCSTR fileName);
 	Type_SaveFilterAlias m_SaveFilterAlias = 0;
 
+	typedef BOOL (CDECL* Type_LoadExo)(LPCSTR fileName, int frame, int layer, AviUtl::FilterPlugin* fp, AviUtl::EditHandle* editp);
+	Type_LoadExo m_LoadExo = 0;
+
+	typedef BOOL (CDECL* Type_SaveExo)(LPCSTR fileName);
+	Type_SaveExo m_SaveExo = 0;
+
+	typedef BOOL (CDECL* Type_SetScene)(int sceneIndex, AviUtl::FilterPlugin* fp, AviUtl::EditHandle* editp);
+	Type_SetScene m_SetScene = 0;
+
+	typedef void (CDECL* Type_RedrawLayers)(int flags[]);
+	Type_RedrawLayers m_RedrawLayers = 0;
+
 public:
 
 	BOOL initAviUtlAddress()
@@ -87,7 +101,7 @@ public:
 		if (!m_aviutl)
 			return FALSE;
 
-		m_exfunc = (EXFUNC*)(m_aviutl + 0xA8C78);
+		m_exfunc = (AviUtl::ExFunc*)(m_aviutl + 0xA8C78);
 		m_get_sys_info = (Type_get_sys_info)(m_aviutl + 0x22120);
 
 		return TRUE;
@@ -114,11 +128,13 @@ public:
 		m_objectExdata = (BYTE**)(m_exedit + 0x1E0FA8);
 		m_nextObject = (int*)(m_exedit + 0x1592d8);
 		m_selectedObjects = (int*)(m_exedit + 0x179230);
-		m_selectedObjectsCount = (int*)(m_exedit + 0x167D88);
-		m_editp = (void**)(m_exedit + 0x1a532c);
+		m_selectedObjectCount = (int*)(m_exedit + 0x167D88);
+		m_sceneSettingTable = (ExEdit::SceneSetting*)(m_exedit + 0x177A50);
+		m_editp = (AviUtl::EditHandle**)(m_exedit + 0x1a532c);
 		m_layerWidth = (int*)(m_exedit + 0x1A52FC);
 		m_layerHeight = (int*)(m_exedit + 0xA3E20);
 		m_layerVisibleCount = (int*)(m_exedit + 0xA3FBC);
+		m_layerNameArray = (char**)(m_exedit + 0xA4058);
 		m_aviutlFrameNumber = (int*)(m_exedit + 0x14D3A0);
 		m_exeditFrameNumber = (int*)(m_exedit + 0x1A5318);
 
@@ -141,15 +157,19 @@ public:
 		m_GetAliasFileName = (Type_GetAliasFileName)(m_exedit + 0x43FD0);
 		m_AddAlias = (Type_AddAlias)(m_exedit + 0x29DC0);
 		m_SaveFilterAlias = (Type_SaveFilterAlias)(m_exedit + 0x28CA0);
+		m_LoadExo = (Type_LoadExo)(m_exedit + 0x4DCA0);
+		m_SaveExo = (Type_SaveExo)(m_exedit + 0x284D0);
+		m_SetScene = (Type_SetScene)(m_exedit + 0x2BA60);
+		m_RedrawLayers = (Type_RedrawLayers)(m_exedit + 0x392F0);
 
 		return TRUE;
 	}
 
-	Type_ExEditWindowProc HookExEditWindowProc(FILTER* fp, Type_ExEditWindowProc proc)
+	Type_ExEditWindowProc HookExEditWindowProc(AviUtl::FilterPlugin* fp, Type_ExEditWindowProc proc)
 	{
-		using Type = decltype(FILTER::func_WndProc);
+		using Type = decltype(AviUtl::FilterPlugin::func_WndProc);
 
-		FILTER* exedit = GetFilter(fp, "拡張編集");
+		AviUtl::FilterPlugin* exedit = GetFilter(fp, "拡張編集");
 		Type_ExEditWindowProc retValue = (Type_ExEditWindowProc)exedit->func_WndProc;
 		exedit->func_WndProc = (Type)proc;
 		return retValue;
@@ -163,12 +183,12 @@ public:
 public: // AviUtl の変数。
 
 	DWORD GetAviUtl() { return m_aviutl; }
-	EXFUNC* GetExFunc() { return m_exfunc; }
+	AviUtl::ExFunc* GetExFunc() { return m_exfunc; }
 
 public: // AviUtl の関数。
 
 	Type_get_sys_info Get_get_sys_info() { return m_get_sys_info; }
-	BOOL get_sys_info(void* editp, SYS_INFO* sip) { return m_get_sys_info(editp, sip); }
+	BOOL get_sys_info(void* editp, AviUtl::SysInfo* sip) { return m_get_sys_info(editp, sip); }
 
 public:
 
@@ -245,17 +265,22 @@ public:
 		return m_nextObject[objectIndex];
 	}
 
-	int GetSelectedObjects(int i)
+	int GetSelectedObject(int i)
 	{
 		return m_selectedObjects[i];
 	}
 
-	int GetSelectedObjectsCount()
+	int GetSelectedObjectCount()
 	{
-		return *m_selectedObjectsCount;
+		return *m_selectedObjectCount;
 	}
 
-	void* GetEditp()
+	ExEdit::SceneSetting* GetSceneSetting(int sceneIndex)
+	{
+		return m_sceneSettingTable + sceneIndex;
+	}
+
+	AviUtl::EditHandle* GetEditp()
 	{
 		return *m_editp;
 	}
@@ -273,6 +298,11 @@ public:
 	int GetLayerVisibleCount()
 	{
 		return *m_layerVisibleCount;
+	}
+
+	LPCSTR GetLayerName(int layerIndex)
+	{
+		return *m_layerNameArray + layerIndex * 32 + 4;
 	}
 
 	int GetAviUtlFrameNumber()
@@ -353,18 +383,18 @@ public:
 		return ExEdit::Object::MAX_FILTER;
 	}
 
-	static int GetFilterNumber(FILTER *fp)
+	static int GetFilterNumber(AviUtl::FilterPlugin *fp)
 	{
-		SYS_INFO si;
+		AviUtl::SysInfo si;
 		fp->exfunc->get_sys_info(NULL, &si);
 		return si.filter_n;
 	}
 
-	static FILTER* GetFilter(FILTER *fp, LPCSTR name)
+	static AviUtl::FilterPlugin* GetFilter(AviUtl::FilterPlugin *fp, LPCSTR name)
 	{
 		for (int i = GetFilterNumber(fp) - 1; i >= 0; i--)
 		{
-			FILTER* temp = (FILTER*)fp->exfunc->get_filterp(i);
+			AviUtl::FilterPlugin* temp = (AviUtl::FilterPlugin*)fp->exfunc->get_filterp(i);
 			if (!strcmp(temp->name, name)) return temp;
 		}
 		return NULL;
@@ -437,6 +467,26 @@ public:
 		return m_SaveFilterAlias;
 	}
 
+	Type_LoadExo GetLoadExo()
+	{
+		return m_LoadExo;
+	}
+
+	Type_SaveExo GetSaveExo()
+	{
+		return m_SaveExo;
+	}
+
+	Type_SetScene GetSetScene()
+	{
+		return m_SetScene;
+	}
+
+	Type_RedrawLayers GetRedrawLayers()
+	{
+		return m_RedrawLayers;
+	}
+
 public:
 
 	__int64 FrameToX(int frame)
@@ -502,5 +552,25 @@ public:
 	BOOL SaveFilterAlias(int objectIndex, int filterIndex, LPCSTR fileName)
 	{
 		return m_SaveFilterAlias(objectIndex, filterIndex, fileName);
+	}
+
+	BOOL LoadExo(LPCSTR fileName, int frame, int layer, AviUtl::FilterPlugin* fp, AviUtl::EditHandle* editp)
+	{
+		return m_LoadExo(fileName, frame, layer, fp, editp);
+	}
+
+	BOOL SaveExo(LPCSTR fileName)
+	{
+		return m_SaveExo(fileName);
+	}
+
+	void SetScene(int sceneIndex, AviUtl::FilterPlugin* fp, AviUtl::EditHandle* editp)
+	{
+		m_SetScene(sceneIndex, fp, editp);
+	}
+
+	void RedrawLayers(int flags[])
+	{
+		m_RedrawLayers(flags);
 	}
 };
