@@ -63,6 +63,8 @@ inline HRESULT WINAPI getPrivateProfileBool(LPCWSTR fileName, LPCWSTR appName, L
 	{
 		outValue = !!wcstol(value, 0, 0);
 	}
+
+	return S_OK;
 }
 
 inline HRESULT WINAPI getPrivateProfileColor(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, COLORREF& outValue)

@@ -361,8 +361,6 @@ public:
 	}
 };
 
-typedef std::shared_ptr<SimpleFileMapping> SimpleFileMappingPtr;
-
 //--------------------------------------------------------------------
 
 class FileMapping
@@ -431,8 +429,6 @@ public:
 		}
 	};
 };
-
-typedef std::shared_ptr<FileMapping> FileMappingPtr;
 
 //--------------------------------------------------------------------
 
