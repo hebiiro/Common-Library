@@ -36,10 +36,13 @@ public:
 	char** m_layerNameArray = 0; // レイヤー名の配列。
 	int* m_aviutlFrameNumber = 0; // AviUtl の最終フレーム番号。
 	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
+	int* m_exeditCurrentFrame = 0; // 拡張編集の現在フレーム。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
 
-	typedef LRESULT (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, AviUtl::EditHandle* editp, AviUtl::FilterPlugin *fp);
-	typedef LRESULT (WINAPI* Type_SettingDialogProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+	using Type_ExEditWindowProc = decltype(AviUtl::FilterPlugin::func_WndProc);
+//	typedef BOOL (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, AviUtl::EditHandle* editp, AviUtl::FilterPlugin *fp);
+	typedef WNDPROC Type_SettingDialogProc;
+//	typedef LRESULT (WINAPI* Type_SettingDialogProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	typedef __int64 (CDECL* Type_FrameToX)(int frame);
 	Type_FrameToX m_FrameToX = 0;
@@ -137,6 +140,7 @@ public:
 		m_layerNameArray = (char**)(m_exedit + 0xA4058);
 		m_aviutlFrameNumber = (int*)(m_exedit + 0x14D3A0);
 		m_exeditFrameNumber = (int*)(m_exedit + 0x1A5318);
+		m_exeditCurrentFrame = (int*)(m_exedit + 0x1A5304);
 
 		m_settingDialogMenu[0] = (HMENU*)(m_exedit + 0x158D20); // 映像フィルタオブジェクト
 		m_settingDialogMenu[1] = (HMENU*)(m_exedit + 0x158D24); // 音声メディアオブジェクト
@@ -165,19 +169,17 @@ public:
 		return TRUE;
 	}
 
-	Type_ExEditWindowProc HookExEditWindowProc(AviUtl::FilterPlugin* fp, Type_ExEditWindowProc proc)
+	Type_ExEditWindowProc HookExEditWindowProc(AviUtl::FilterPlugin* fp, Type_ExEditWindowProc newProc)
 	{
-		using Type = decltype(AviUtl::FilterPlugin::func_WndProc);
-
 		AviUtl::FilterPlugin* exedit = GetFilter(fp, "拡張編集");
-		Type_ExEditWindowProc retValue = (Type_ExEditWindowProc)exedit->func_WndProc;
-		exedit->func_WndProc = (Type)proc;
-		return retValue;
+		Type_ExEditWindowProc oldProc = exedit->func_WndProc;
+		exedit->func_WndProc = newProc;
+		return oldProc;
 	}
 
-	Type_SettingDialogProc HookSettingDialogProc(Type_SettingDialogProc proc)
+	Type_SettingDialogProc HookSettingDialogProc(Type_SettingDialogProc newProc)
 	{
-		return writeAbsoluteAddress(m_exedit + 0x2E800 + 4, proc);
+		return writeAbsoluteAddress(m_exedit + 0x2E800 + 4, newProc);
 	}
 
 public: // AviUtl の変数。
@@ -189,6 +191,11 @@ public: // AviUtl の関数。
 
 	Type_get_sys_info Get_get_sys_info() { return m_get_sys_info; }
 	BOOL get_sys_info(void* editp, AviUtl::SysInfo* sip) { return m_get_sys_info(editp, sip); }
+
+	static BOOL isPlaying(AviUtl::FilterProcInfo* fpip)
+	{
+		return !!((DWORD)fpip->editp->aviutl_window_info.flag & 0x00040000);
+	}
 
 public:
 
@@ -313,6 +320,16 @@ public:
 	int GetExEditFrameNumber()
 	{
 		return *m_exeditFrameNumber;
+	}
+
+	int GetExEditCurrentFrame()
+	{
+		return *m_exeditCurrentFrame;
+	}
+
+	void SetExEditCurrentFrame(int frame)
+	{
+		*m_exeditCurrentFrame = frame;
 	}
 
 	HMENU GetSettingDialogMenu(int index)

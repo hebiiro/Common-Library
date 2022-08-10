@@ -99,7 +99,7 @@ inline T hookAbsoluteCall(DWORD address, T hookProc)
 	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, sizeof(code));
 
 	// 元の関数を返す。
-	return (T)retValue;
+	return (T)*(DWORD*)retValue;
 }
 
 // 絶対アドレスを書き換える。
@@ -108,10 +108,10 @@ inline T writeAbsoluteAddress(DWORD address, T x)
 {
 	// 元の値を取得する。
 	T retValue = 0;
-	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)address, &retValue, sizeof(retValue), NULL);
+	BOOL result1 = ::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)address, &retValue, sizeof(retValue), NULL);
 
 	// 絶対アドレスを書き換える。そのあと命令キャッシュをフラッシュする。
-	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, &x, sizeof(x), NULL);
+	BOOL result2 = ::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, &x, sizeof(x), NULL);
 	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, sizeof(x));
 
 	// 元の値を返す。
@@ -149,8 +149,10 @@ T hookImportFunc(HMODULE module, LPCSTR funcName, T func)
 			if (!pszFunc) return TRUE;
 			if (::lstrcmpA(pszFunc, hooker->m_funcName) != 0) return TRUE;
 
-			hooker->m_oldFunc = (T)*ppvFunc;
-			*ppvFunc = hooker->m_newFunc;
+			DWORD protect = PAGE_READWRITE;
+			BOOL result1 = ::VirtualProtect(ppvFunc, sizeof(*ppvFunc), protect, &protect);
+			hooker->m_oldFunc = writeAbsoluteAddress((DWORD)ppvFunc, hooker->m_newFunc);
+			BOOL result2 = ::VirtualProtect(ppvFunc, sizeof(*ppvFunc), protect, &protect);
 
 			return FALSE;
 		}
