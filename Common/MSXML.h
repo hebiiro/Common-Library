@@ -198,6 +198,36 @@ inline HRESULT WINAPI getPrivateProfileString(
 }
 
 template<class T>
+inline HRESULT WINAPI getPrivateProfileString(const _variant_t& var, T& outValue, int cch)
+{
+	try
+	{
+		if (var.vt == VT_NULL)
+			return S_FALSE;
+
+		_bstr_t value = (_bstr_t)var;
+
+		if (!(BSTR)value)
+			return S_FALSE;
+
+		::StringCchCopy(outValue, cch, value);
+
+		return S_OK;
+	}
+	catch (_com_error& e)
+	{
+		return e.Error();
+	}
+}
+
+template<class T>
+inline HRESULT WINAPI getPrivateProfileString(
+	const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, T& outValue, int cch)
+{
+	return getPrivateProfileString(element->getAttribute(name), outValue, cch);
+}
+
+template<class T>
 inline HRESULT WINAPI getPrivateProfileBool(const _variant_t& var, T& outValue)
 {
 	try
@@ -588,13 +618,10 @@ inline HRESULT getPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element,
 
 	wp.flags = WPF_SETMINPOSITION;
 
-	MSXML2::IXMLDOMNodeListPtr nodeList = element->getElementsByTagName(name);
+	MSXML2::IXMLDOMNodeListPtr nodeList = element->selectNodes(name);
 	int c = nodeList->length;
 	for (int i = 0; i < c; i++)
 	{
-		if (nodeList->item[i]->parentNode != element)
-			continue;
-
 		MSXML2::IXMLDOMElementPtr element = nodeList->item[i];
 
 		if (cmdShow == -1)
@@ -615,6 +642,34 @@ inline HRESULT getPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element,
 
 	if (!::SetWindowPlacement(hwnd, &wp))
 		return S_FALSE;
+
+	return S_OK;
+}
+
+inline HRESULT getPrivateProfileLOGFONT(const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, LOGFONT& outValue)
+{
+	MSXML2::IXMLDOMNodeListPtr nodeList = element->selectNodes(name);
+	int c = nodeList->length;
+	for (int i = 0; i < c; i++)
+	{
+		MSXML2::IXMLDOMElementPtr element = nodeList->item[i];
+
+		getPrivateProfileInt(element, L"lfHeight", outValue.lfHeight);
+		getPrivateProfileInt(element, L"lfWidth", outValue.lfWidth);
+		getPrivateProfileInt(element, L"lfEscapement", outValue.lfEscapement);
+		getPrivateProfileInt(element, L"lfOrientation", outValue.lfOrientation);
+		getPrivateProfileInt(element, L"lfWeight", outValue.lfWeight);
+
+		getPrivateProfileInt(element, L"lfItalic", outValue.lfItalic);
+		getPrivateProfileInt(element, L"lfUnderline", outValue.lfUnderline);
+		getPrivateProfileInt(element, L"lfStrikeOut", outValue.lfStrikeOut);
+		getPrivateProfileInt(element, L"lfCharSet", outValue.lfCharSet);
+		getPrivateProfileInt(element, L"lfOutPrecision", outValue.lfOutPrecision);
+		getPrivateProfileInt(element, L"lfClipPrecision", outValue.lfClipPrecision);
+		getPrivateProfileInt(element, L"lfQuality", outValue.lfQuality);
+		getPrivateProfileInt(element, L"lfPitchAndFamily", outValue.lfPitchAndFamily);
+		getPrivateProfileString(element, L"lfFaceName", outValue.lfFaceName, _countof(outValue.lfFaceName));
+	}
 
 	return S_OK;
 }
@@ -683,14 +738,16 @@ inline HRESULT WINAPI setPrivateProfileLabel(
 	return S_FALSE;
 }
 
-inline HRESULT setPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element_, LPCWSTR name, HWND hwnd, DWORD cmdShow = -1)
+inline HRESULT setPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& _element, LPCWSTR name, HWND hwnd, DWORD cmdShow = -1)
 {
 	WINDOWPLACEMENT wp = { sizeof(wp) };
 	if (!::GetWindowPlacement(hwnd, &wp)) return E_FAIL;
 
+	if (::IsIconic(hwnd)) wp.showCmd = SW_SHOW;
+	if (wp.flags == WPF_RESTORETOMAXIMIZED) wp.showCmd = SW_SHOWMAXIMIZED;
 	if (!::IsWindowVisible(hwnd)) wp.showCmd = SW_HIDE;
 
-	MSXML2::IXMLDOMElementPtr element = appendElement(element_, name);
+	MSXML2::IXMLDOMElementPtr element = appendElement(_element, name);
 
 	setPrivateProfileInt(element, L"flags", (cmdShow == -1) ? wp.showCmd : cmdShow);
 
@@ -703,6 +760,29 @@ inline HRESULT setPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element_
 	setPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
 	setPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
 	setPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
+
+	return S_OK;
+}
+
+inline HRESULT setPrivateProfileLOGFONT(const MSXML2::IXMLDOMElementPtr& _element, LPCWSTR name, const LOGFONT& value)
+{
+	MSXML2::IXMLDOMElementPtr element = appendElement(_element, name);
+
+	setPrivateProfileInt(element, L"lfHeight", value.lfHeight);
+	setPrivateProfileInt(element, L"lfWidth", value.lfWidth);
+	setPrivateProfileInt(element, L"lfEscapement", value.lfEscapement);
+	setPrivateProfileInt(element, L"lfOrientation", value.lfOrientation);
+	setPrivateProfileInt(element, L"lfWeight", value.lfWeight);
+
+	setPrivateProfileInt(element, L"lfItalic", value.lfItalic);
+	setPrivateProfileInt(element, L"lfUnderline", value.lfUnderline);
+	setPrivateProfileInt(element, L"lfStrikeOut", value.lfStrikeOut);
+	setPrivateProfileInt(element, L"lfCharSet", value.lfCharSet);
+	setPrivateProfileInt(element, L"lfOutPrecision", value.lfOutPrecision);
+	setPrivateProfileInt(element, L"lfClipPrecision", value.lfClipPrecision);
+	setPrivateProfileInt(element, L"lfQuality", value.lfQuality);
+	setPrivateProfileInt(element, L"lfPitchAndFamily", value.lfPitchAndFamily);
+	setPrivateProfileString(element, L"lfFaceName", value.lfFaceName);
 
 	return S_OK;
 }

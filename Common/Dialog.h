@@ -27,20 +27,20 @@ public:
 		destroy();
 	}
 
-	BOOL create(HINSTANCE instance, LPCTSTR name, HWND parent)
+	virtual BOOL create(HINSTANCE instance, LPCTSTR name, HWND parent)
 	{
 		m_hdlg = ::CreateDialogParam(instance, name, parent, dlgProc, (LPARAM)this);
 		return !!m_hdlg;
 	}
 
-	BOOL destroy()
+	virtual BOOL destroy()
 	{
 		if (!m_hdlg) return FALSE;
 		::DestroyWindow(m_hdlg), m_hdlg = 0;
 		return TRUE;
 	}
 
-	BOOL close(int result)
+	virtual BOOL close(int result)
 	{
 		if (!m_hdlg) return FALSE;
 		::ShowWindow(m_hdlg, SW_HIDE);
@@ -49,7 +49,7 @@ public:
 		return TRUE;
 	}
 
-	int doModal()
+	virtual int doModal()
 	{
 		HWND parent = ::GetWindow(m_hdlg, GW_OWNER);
 		::EnableWindow(parent, FALSE);
@@ -128,6 +128,16 @@ public:
 			}
 		}
 
+		return FALSE;
+	}
+};
+
+class NoCloseDialog : public Dialog
+{
+public:
+
+	virtual BOOL close(int result)
+	{
 		return FALSE;
 	}
 };

@@ -118,3 +118,44 @@ public:
 		return TRUE;
 	}
 };
+
+class CDIBDC : public CDC
+{
+public:
+
+	CBitmap m_bitmap;
+	CBitmap* m_oldBitmap = 0;
+	int m_w = 0, m_h = 0;
+	void* m_bits = 0;
+
+	CDIBDC(CDC* dc, int w, int h, int bitCount = 32)
+	{
+		CreateCompatibleDC(dc);
+
+		m_w = w;
+		m_h = h;
+	
+		BITMAPINFO bmi = {};
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = m_w;
+		bmi.bmiHeader.biHeight = m_h;
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = bitCount;
+		bmi.bmiHeader.biCompression = BI_RGB;
+		bmi.bmiHeader.biSizeImage = m_w * m_h * (bitCount / 8);
+
+		m_bitmap.Attach(::CreateDIBSection(GetSafeHdc(), &bmi, DIB_RGB_COLORS, &m_bits, 0, 0));
+		m_oldBitmap = SelectObject(&m_bitmap);
+	}
+
+	~CDIBDC()
+	{
+		if (isValid())
+			SelectObject(m_oldBitmap);
+	}
+
+	BOOL isValid()
+	{
+		return !!m_bitmap.GetSafeHandle();
+	}
+};

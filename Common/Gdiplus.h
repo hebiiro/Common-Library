@@ -111,6 +111,41 @@ public:
 	}
 };
 
+class MyFillRectF : public RectF
+{
+public:
+
+	MyFillRectF()
+	{
+	}
+
+	MyFillRectF(const RECT& rc)
+	{
+		SetRect(rc);
+	}
+
+	MyFillRectF(const Rect& rc)
+	{
+		SetRect(rc);
+	}
+
+	void SetRect(const RECT& rc)
+	{
+		this->X = (REAL)rc.left  - 0.5f;
+		this->Y = (REAL)rc.top  - 0.5f;
+		this->Width = (REAL)(rc.right - rc.left);
+		this->Height = (REAL)(rc.bottom - rc.top);
+	}
+
+	void SetRect(const Rect& rc)
+	{
+		this->X = (REAL)rc.X  - 0.5f;
+		this->Y = (REAL)rc.Y  - 0.5f;
+		this->Width = (REAL)rc.Width;
+		this->Height = (REAL)rc.Height;
+	}
+};
+
 class MyColor : public Color
 {
 public:
