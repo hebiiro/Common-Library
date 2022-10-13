@@ -38,6 +38,7 @@ public:
 	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
 	int* m_exeditCurrentFrame = 0; // 拡張編集の現在フレーム。
 	HMENU* m_settingDialogMenu[5] = {}; // 設定ダイアログのコンテキストメニュー。
+	BYTE* m_positionDataArray = 0;
 
 	using Type_ExEditWindowProc = decltype(AviUtl::FilterPlugin::func_WndProc);
 //	typedef BOOL (CDECL* Type_ExEditWindowProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, AviUtl::EditHandle* editp, AviUtl::FilterPlugin *fp);
@@ -92,8 +93,14 @@ public:
 	typedef BOOL (CDECL* Type_SetScene)(int sceneIndex, AviUtl::FilterPlugin* fp, AviUtl::EditHandle* editp);
 	Type_SetScene m_SetScene = 0;
 
+	typedef void (CDECL* Type_RedrawLayer)(int layerIndex);
+	Type_RedrawLayer m_RedrawLayer = 0;
+
 	typedef void (CDECL* Type_RedrawLayers)(int flags[]);
 	Type_RedrawLayers m_RedrawLayers = 0;
+
+	typedef int (CDECL* Type_DeleteMidPoint)(int objectIndex, int frame);
+	Type_DeleteMidPoint m_DeleteMidPoint = 0;
 
 public:
 
@@ -148,6 +155,8 @@ public:
 		m_settingDialogMenu[3] = (HMENU*)(m_exedit + 0x167D40); // カメラ制御＆時間制御
 		m_settingDialogMenu[4] = (HMENU*)(m_exedit + 0x167D44); // 音声フィルタオブジェクト
 
+		m_positionDataArray = (BYTE*)(m_exedit + 0x146270);
+
 		m_PushUndo = (Type_PushUndo)(m_exedit + 0x0008D150);
 		m_CreateUndo = (Type_CreateUndo)(m_exedit + 0x0008D290);
 		m_HideControls = (Type_HideControls)(m_exedit + 0x00030500);
@@ -164,7 +173,9 @@ public:
 		m_LoadExo = (Type_LoadExo)(m_exedit + 0x4DCA0);
 		m_SaveExo = (Type_SaveExo)(m_exedit + 0x284D0);
 		m_SetScene = (Type_SetScene)(m_exedit + 0x2BA60);
+		m_RedrawLayer = (Type_RedrawLayer)(m_exedit + 0x39290);
 		m_RedrawLayers = (Type_RedrawLayers)(m_exedit + 0x392F0);
+		m_DeleteMidPoint = (Type_DeleteMidPoint)(m_exedit + 0x34A30);
 
 		return TRUE;
 	}
@@ -342,6 +353,11 @@ public:
 		return sizeof(m_settingDialogMenu) / sizeof(m_settingDialogMenu[0]);
 	}
 
+	BYTE* GetPositionDataArray()
+	{
+		return m_positionDataArray;
+	}
+
 	BYTE* GetExdata(ExEdit::Object* object, int filterIndex)
 	{
 		BYTE* exdataTable = *m_objectExdata;
@@ -499,9 +515,19 @@ public:
 		return m_SetScene;
 	}
 
+	Type_RedrawLayer GetRedrawLayer()
+	{
+		return m_RedrawLayer;
+	}
+
 	Type_RedrawLayers GetRedrawLayers()
 	{
 		return m_RedrawLayers;
+	}
+
+	Type_DeleteMidPoint GetDeleteMidPoint()
+	{
+		return m_DeleteMidPoint;
 	}
 
 public:
@@ -586,8 +612,18 @@ public:
 		m_SetScene(sceneIndex, fp, editp);
 	}
 
+	void RedrawLayer(int layerIndex)
+	{
+		m_RedrawLayer(layerIndex);
+	}
+
 	void RedrawLayers(int flags[])
 	{
 		m_RedrawLayers(flags);
+	}
+
+	int DeleteMidPoint(int objectIndex, int frame)
+	{
+		return m_DeleteMidPoint(objectIndex, frame);
 	}
 };

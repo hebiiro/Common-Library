@@ -146,6 +146,60 @@ public:
 	}
 };
 
+class MyFontRectF : public RectF
+{
+public:
+
+	MyFontRectF()
+	{
+	}
+
+	MyFontRectF(const RECT& rc, int fontHeight)
+	{
+		SetRect(rc, fontHeight);
+	}
+
+	MyFontRectF(const Rect& rc, int fontHeight)
+	{
+		SetRect(rc, fontHeight);
+	}
+
+	MyFontRectF(const RectF& rc, int fontHeight)
+	{
+		SetRect(rc, fontHeight);
+	}
+
+	void SetRect(const RECT& rc, int fontHeight)
+	{
+		REAL fix = (REAL)fontHeight / 6.0f;
+
+		this->X = (REAL)rc.left  - fix;
+		this->Y = (REAL)rc.top  - fix;
+		this->Width = (REAL)(rc.right - rc.left) + fix * 2;
+		this->Height = (REAL)(rc.bottom - rc.top) + fix * 2;
+	}
+
+	void SetRect(const Rect& rc, int fontHeight)
+	{
+		REAL fix = (REAL)fontHeight / 6.0f;
+
+		this->X = (REAL)rc.X  - fix;
+		this->Y = (REAL)rc.Y  - fix;
+		this->Width = (REAL)rc.Width + fix * 2;
+		this->Height = (REAL)rc.Height + fix * 2;
+	}
+
+	void SetRect(const RectF& rc, int fontHeight)
+	{
+		REAL fix = (REAL)fontHeight / 6.0f;
+
+		this->X = (REAL)rc.X  - fix;
+		this->Y = (REAL)rc.Y  - fix;
+		this->Width = (REAL)rc.Width + fix * 2;
+		this->Height = (REAL)rc.Height + fix * 2;
+	}
+};
+
 class MyColor : public Color
 {
 public:
