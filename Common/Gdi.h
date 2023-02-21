@@ -2,6 +2,53 @@
 
 //--------------------------------------------------------------------
 
+template<class T>
+class GdiObj
+{
+public:
+
+	T m_gdiobj = 0;
+
+public:
+
+	GdiObj(T gdiobj)
+	{
+		m_gdiobj = gdiobj;
+	}
+
+	~GdiObj()
+	{
+		::DeleteObject(m_gdiobj);
+	}
+
+	operator T()
+	{
+		return m_gdiobj;
+	}
+};
+
+class GdiObjSelector
+{
+public:
+
+	HDC m_dc = 0;
+	HGDIOBJ m_gdiobj = 0;
+
+public:
+
+	GdiObjSelector(HDC dc, HGDIOBJ gdiobj)
+	{
+		m_gdiobj = ::SelectObject(dc, gdiobj);
+	}
+
+	~GdiObjSelector()
+	{
+		::SelectObject(m_dc, m_gdiobj);
+	}
+};
+
+//--------------------------------------------------------------------
+
 class ClientDC
 {
 public:
@@ -89,50 +136,50 @@ public:
 	}
 };
 
-//--------------------------------------------------------------------
-
-template<class T>
-class GdiObj
+class DoubleBufferDC
 {
 public:
 
-	T m_gdiobj = 0;
+	HDC m_dstDC;
+	RECT m_rc;
 
-public:
+	HDC m_dc;
+	HBITMAP m_bitmap;
+	HBITMAP m_oldBitmap;
 
-	GdiObj(T gdiobj)
+	DoubleBufferDC(HDC dc, LPCRECT rc)
 	{
-		m_gdiobj = gdiobj;
+		m_dstDC = dc;
+		m_rc = *rc;
+
+		int w = m_rc.right - m_rc.left;
+		int h = m_rc.bottom - m_rc.top;
+
+		m_dc = ::CreateCompatibleDC(dc);
+		m_bitmap = ::CreateCompatibleBitmap(dc, w, h);
+		m_oldBitmap = (HBITMAP)::SelectObject(m_dc, m_bitmap);
 	}
 
-	~GdiObj()
+	~DoubleBufferDC()
 	{
-		::DeleteObject(m_gdiobj);
+		int w = m_rc.right - m_rc.left;
+		int h = m_rc.bottom - m_rc.top;
+
+		::BitBlt(m_dstDC, 0, 0, w, h, m_dc, 0, 0, SRCCOPY);
+
+		::SelectObject(m_dc, m_oldBitmap);
+		::DeleteObject(m_bitmap);
+		::DeleteDC(m_dc);
 	}
 
-	operator T()
+	BOOL isValid()
 	{
-		return m_gdiobj;
-	}
-};
-
-class GdiObjSelector
-{
-public:
-
-	HDC m_dc = 0;
-	HGDIOBJ m_gdiobj = 0;
-
-public:
-
-	GdiObjSelector(HDC dc, HGDIOBJ gdiobj)
-	{
-		m_gdiobj = ::SelectObject(dc, gdiobj);
+		return !!m_dc;
 	}
 
-	~GdiObjSelector()
+	operator HDC()
 	{
-		::SelectObject(m_dc, m_gdiobj);
+		return m_dc;
 	}
 };
 

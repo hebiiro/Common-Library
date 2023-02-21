@@ -37,6 +37,16 @@ inline LPARAM PT2LP(POINT pt)
 	return MAKELPARAM(pt.x, pt.y);
 }
 
+inline POINT operator+(const POINT& a, const POINT& b)
+{
+	return POINT { a.x + b.x, a.y + b.y };
+}
+
+inline POINT operator-(const POINT& a, const POINT& b)
+{
+	return POINT { a.x - b.x, a.y - b.y };
+}
+
 inline void GetMonitorRect(POINT point, RECT& rect)
 {
 	// ウィンドウが表示されているディスプレイ情報を取得する
@@ -79,6 +89,16 @@ inline void windowToClient(HWND hwnd, LPRECT rc)
 	rc->top -= rcWindow.top - rcClient.top;
 	rc->right -= rcWindow.right - rcClient.right;
 	rc->bottom -= rcWindow.bottom - rcClient.bottom;
+}
+
+inline BOOL setWindowRect(HWND hwnd, LPCRECT rc, UINT flags = 0)
+{
+	int x = rc->left;
+	int y = rc->top;
+	int w = getWidth(*rc);
+	int h = getHeight(*rc);
+
+	return ::SetWindowPos(hwnd, 0, x, y, w, h, SWP_NOZORDER | flags);
 }
 
 //--------------------------------------------------------------------
@@ -375,7 +395,6 @@ public:
 		: m_handle(0)
 	{
 		MY_TRACE(_T("FileMapping::FileMapping(%d, %s)\n"), size, name);
-
 
 		m_handle = ::CreateFileMapping(
 			INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, 0, size, name);

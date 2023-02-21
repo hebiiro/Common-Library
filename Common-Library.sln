@@ -8,6 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{C24342
 		Common\AviUtlInternal.h = Common\AviUtlInternal.h
 		Common\Dialog.h = Common\Dialog.h
 		Common\FileUpdateChecker.h = Common\FileUpdateChecker.h
+		Common\Gdi.h = Common\Gdi.h
 		Common\Gdiplus.h = Common\Gdiplus.h
 		Common\Hook.h = Common\Hook.h
 		Common\MFC.h = Common\MFC.h

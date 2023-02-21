@@ -223,6 +223,166 @@ inline HRESULT WINAPI getPrivateProfileColor(LPCWSTR fileName, LPCWSTR appName, 
 	return S_OK;
 }
 #endif
+#ifdef NANOVG_H
+inline HRESULT WINAPI getPrivateProfileColor(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, NVGcolor& outValue)
+{
+	_bstr_t value = L"";
+	HRESULT hr = getPrivateProfileBSTR(fileName, appName, keyName, value);
+	if (hr != S_OK) return hr;
+	if (!(BSTR)value) return S_FALSE;
+
+	int c = ::lstrlenW(value);
+
+	if (c == 0) return S_FALSE;
+
+	BSTR bstrValue = value;
+
+	if (*bstrValue == L'#')
+	{
+		BSTR sep = wcschr(bstrValue, L',');
+		BSTR end = 0;
+		DWORD temp = wcstoul(bstrValue + 1, &end, 16);
+
+		DWORD r = 0, g = 0, b = 0, a = 255;
+
+		if (end - bstrValue == 4)
+		{
+			// #fc8
+
+			r = (temp & 0x0F00) >> 8;
+			g = (temp & 0x00F0) >> 4;
+			b = (temp & 0x000F) >> 0;
+
+			r |= r << 4;
+			g |= g << 4;
+			b |= b << 4;
+		}
+		else
+		{
+			// #ffcc88
+
+			r = (temp & 0x00FF0000) >> 16;
+			g = (temp & 0x0000FF00) >> 8;
+			b = (temp & 0x000000FF) >> 0;
+		}
+
+		if (sep)
+		{
+			// #..., A
+
+			a = wcstoul(sep + 1, 0, 0);
+		}
+
+		outValue = nvgRGBA((BYTE)r, (BYTE)g, (BYTE)b, (BYTE)a);
+		return S_OK;
+	}
+
+	if (wcschr(bstrValue, L'.'))
+	{
+		// 小数。
+
+		BSTR sep1 = wcschr(bstrValue, L',');
+
+		if (!sep1)
+		{
+			// RGB
+
+			float rgb = wcstof(bstrValue, 0);
+			outValue = nvgRGBf(rgb, rgb, rgb);
+			return S_OK;
+		}
+
+		BSTR sep2 = wcschr(sep1 + 1, L',');
+
+		if (!sep2)
+		{
+			// RGB, A
+
+			float rgb = wcstof(bstrValue, 0);
+			float a = wcstof(sep1 + 1, 0);
+			outValue = nvgRGBAf(rgb, rgb, rgb, a);
+			return S_OK;
+		}
+
+		BSTR sep3 = wcschr(sep2 + 1, L',');
+
+		if (!sep3)
+		{
+			// R, G, B
+
+			float r = wcstof(bstrValue, 0);
+			float g = wcstof(sep1 + 1, 0);
+			float b = wcstof(sep2 + 1, 0);
+			outValue = nvgRGBf(r, g, b);
+			return S_OK;
+		}
+
+		{
+			// R, G, B, A
+
+			float r = wcstof(bstrValue, 0);
+			float g = wcstof(sep1 + 1, 0);
+			float b = wcstof(sep2 + 1, 0);
+			float a = wcstof(sep3 + 1, 0);
+			outValue = nvgRGBAf(r, g, b, a);
+			return S_OK;
+		}
+	}
+	else
+	{
+		// 整数。
+
+		BSTR sep1 = wcschr(bstrValue, L',');
+
+		if (!sep1)
+		{
+			// RGB
+
+			DWORD rgb = wcstoul(bstrValue, 0, 0);
+			outValue = nvgRGB((BYTE)rgb, (BYTE)rgb, (BYTE)rgb);
+			return S_OK;
+		}
+
+		BSTR sep2 = wcschr(sep1 + 1, L',');
+
+		if (!sep2)
+		{
+			// RGB, A
+
+			DWORD rgb = wcstoul(bstrValue, 0, 0);
+			DWORD a = wcstoul(sep1 + 1, 0, 0);
+			outValue = nvgRGBA((BYTE)rgb, (BYTE)rgb, (BYTE)rgb, (BYTE)a);
+			return S_OK;
+		}
+
+		BSTR sep3 = wcschr(sep2 + 1, L',');
+
+		if (!sep3)
+		{
+			// R, G, B
+
+			DWORD r = wcstoul(bstrValue, 0, 0);
+			DWORD g = wcstoul(sep1 + 1, 0, 0);
+			DWORD b = wcstoul(sep2 + 1, 0, 0);
+			outValue = nvgRGB((BYTE)r, (BYTE)g, (BYTE)b);
+			return S_OK;
+		}
+
+		{
+			// R, G, B, A
+
+			DWORD r = wcstoul(bstrValue, 0, 0);
+			DWORD g = wcstoul(sep1 + 1, 0, 0);
+			DWORD b = wcstoul(sep2 + 1, 0, 0);
+			DWORD a = wcstoul(sep3 + 1, 0, 0);
+			outValue = nvgRGBA((BYTE)r, (BYTE)g, (BYTE)b, (BYTE)a);
+			return S_OK;
+		}
+	}
+
+	return S_OK;
+}
+#endif
 template<class T, class S>
 inline HRESULT WINAPI getPrivateProfilePercent(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, T& outValue, S& outValuePercent)
 {
@@ -333,6 +493,18 @@ inline HRESULT WINAPI setPrivateProfileColor(LPCWSTR fileName, LPCWSTR appName, 
 {
 	WCHAR text[MAX_PATH] = {};
 	::StringCbPrintfW(text, sizeof(text), L"%08X", value.GetValue());
+	return setPrivateProfileBSTR(fileName, appName, keyName, text);
+}
+#endif
+#ifdef NANOVG_H
+inline HRESULT WINAPI setPrivateProfileColor(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, const NVGcolor& value)
+{
+	BYTE r = (BYTE)roundf(value.r * 255.0f);
+	BYTE g = (BYTE)roundf(value.g * 255.0f);
+	BYTE b = (BYTE)roundf(value.b * 255.0f);
+	BYTE a = (BYTE)roundf(value.a * 255.0f);
+	WCHAR text[MAX_PATH] = {};
+	::StringCbPrintfW(text, sizeof(text), L"%d, %d, %d, %d", r, g, b, a);
 	return setPrivateProfileBSTR(fileName, appName, keyName, text);
 }
 #endif

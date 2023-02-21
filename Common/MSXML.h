@@ -646,6 +646,31 @@ inline HRESULT getPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& element,
 	return S_OK;
 }
 
+inline HRESULT getPrivateProfileWindowRect(const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, HWND hwnd)
+{
+	RECT rc = {};
+
+	MSXML2::IXMLDOMNodeListPtr nodeList = element->selectNodes(name);
+	int c = nodeList->length;
+	for (int i = 0; i < c; i++)
+	{
+		MSXML2::IXMLDOMElementPtr element = nodeList->item[i];
+
+		getPrivateProfileInt(element, L"left", rc.left);
+		getPrivateProfileInt(element, L"top", rc.top);
+		getPrivateProfileInt(element, L"right", rc.right);
+		getPrivateProfileInt(element, L"bottom", rc.bottom);
+	}
+
+	if (!::SetWindowPos(hwnd, 0, rc.left, rc.top,
+		rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOACTIVATE))
+	{
+		return S_FALSE;
+	}
+
+	return S_OK;
+}
+
 inline HRESULT getPrivateProfileLOGFONT(const MSXML2::IXMLDOMElementPtr& element, LPCWSTR name, LOGFONT& outValue)
 {
 	MSXML2::IXMLDOMNodeListPtr nodeList = element->selectNodes(name);
@@ -760,6 +785,20 @@ inline HRESULT setPrivateProfileWindow(const MSXML2::IXMLDOMElementPtr& _element
 	setPrivateProfileInt(element, L"minY", wp.ptMinPosition.y);
 	setPrivateProfileInt(element, L"maxX", wp.ptMaxPosition.x);
 	setPrivateProfileInt(element, L"maxY", wp.ptMaxPosition.y);
+
+	return S_OK;
+}
+
+inline HRESULT setPrivateProfileWindowRect(const MSXML2::IXMLDOMElementPtr& _element, LPCWSTR name, HWND hwnd)
+{
+	RECT rc; ::GetWindowRect(hwnd, &rc);
+
+	MSXML2::IXMLDOMElementPtr element = appendElement(_element, name);
+
+	setPrivateProfileInt(element, L"left", rc.left);
+	setPrivateProfileInt(element, L"top", rc.top);
+	setPrivateProfileInt(element, L"right", rc.right);
+	setPrivateProfileInt(element, L"bottom", rc.bottom);
 
 	return S_OK;
 }

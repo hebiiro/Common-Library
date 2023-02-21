@@ -12,6 +12,7 @@
 #define MY_TRACE_WSTR(xxx)	MY_TRACE(_T(#xxx) _T(" = %ws\n"), xxx)
 #define MY_TRACE_TSTR(xxx)	MY_TRACE(_T(#xxx) _T(" = %s\n"), xxx)
 #define MY_TRACE_INT(xxx)	MY_TRACE(_T(#xxx) _T(" = %d\n"), xxx)
+#define MY_TRACE_INT64(xxx)	MY_TRACE(_T(#xxx) _T(" = %lld\n"), xxx)
 #define MY_TRACE_HEX(xxx)	MY_TRACE(_T(#xxx) _T(" = 0x%08X\n"), xxx)
 #define MY_TRACE_REAL(xxx)	MY_TRACE(_T(#xxx) _T(" = %f\n"), xxx)
 #define MY_TRACE_RECT(xxx)	MY_TRACE(_T(#xxx) _T(" = %d, %d, %d, %d\n"), (xxx).left, (xxx).top, (xxx).right, (xxx).bottom)
