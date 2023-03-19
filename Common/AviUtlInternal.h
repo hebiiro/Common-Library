@@ -4,7 +4,7 @@ class AviUtlInternal
 {
 private:
 
-	DWORD m_aviutl = 0;
+	uintptr_t m_aviutl = 0;
 	AviUtl::ExFunc* m_exfunc = 0;
 
 	typedef BOOL (CDECL* Type_get_sys_info)(void* editp, AviUtl::SysInfo* sip);
@@ -12,7 +12,7 @@ private:
 
 public:
 
-	DWORD m_exedit = 0;
+	uintptr_t m_exedit = 0;
 	HWND* m_aviutlWindow = 0; // AviUtl ウィンドウ。
 	HWND* m_exeditWindow = 0; // 拡張編集ウィンドウ。
 	HWND* m_settingDialog = 0; // 設定ダイアログ。
@@ -33,7 +33,7 @@ public:
 	int* m_layerWidth = 0; // レイヤーの幅。
 	int* m_layerHeight = 0; // レイヤーの高さ。
 	int* m_layerVisibleCount = 0; // UI 上で表示されているレイヤーの数。
-	char** m_layerNameArray = 0; // レイヤー名の配列。
+	ExEdit::LayerSetting** m_layerSettingArray = 0; // レイヤー設定の配列。
 	int* m_aviutlFrameNumber = 0; // AviUtl の最終フレーム番号。
 	int* m_exeditFrameNumber = 0; // 拡張編集の最終フレーム番号。
 	int* m_exeditCurrentFrame = 0; // 拡張編集の現在フレーム。
@@ -106,7 +106,7 @@ public:
 
 	BOOL initAviUtlAddress()
 	{
-		m_aviutl = (DWORD)::GetModuleHandle(0);
+		m_aviutl = (uintptr_t)::GetModuleHandle(0);
 
 		if (!m_aviutl)
 			return FALSE;
@@ -119,7 +119,7 @@ public:
 
 	BOOL initExEditAddress()
 	{
-		m_exedit = (DWORD)::GetModuleHandle(_T("exedit.auf"));
+		m_exedit = (uintptr_t)::GetModuleHandle(_T("exedit.auf"));
 
 		if (!m_exedit)
 			return FALSE;
@@ -144,7 +144,7 @@ public:
 		m_layerWidth = (int*)(m_exedit + 0x1A52FC);
 		m_layerHeight = (int*)(m_exedit + 0xA3E20);
 		m_layerVisibleCount = (int*)(m_exedit + 0xA3FBC);
-		m_layerNameArray = (char**)(m_exedit + 0xA4058);
+		m_layerSettingArray = (ExEdit::LayerSetting**)(m_exedit + 0xA4058);
 		m_aviutlFrameNumber = (int*)(m_exedit + 0x14D3A0);
 		m_exeditFrameNumber = (int*)(m_exedit + 0x1A5318);
 		m_exeditCurrentFrame = (int*)(m_exedit + 0x1A5304);
@@ -195,7 +195,7 @@ public:
 
 public: // AviUtl の変数。
 
-	DWORD GetAviUtl() { return m_aviutl; }
+	uintptr_t GetAviUtl() { return m_aviutl; }
 	AviUtl::ExFunc* GetExFunc() { return m_exfunc; }
 
 public: // AviUtl の関数。
@@ -205,12 +205,12 @@ public: // AviUtl の関数。
 
 	static BOOL isPlaying(AviUtl::FilterProcInfo* fpip)
 	{
-		return !!((DWORD)fpip->editp->aviutl_window_info.flag & 0x00040000);
+		return !!((UINT)fpip->editp->aviutl_window_info.flag & 0x00040000);
 	}
 
 public:
 
-	DWORD GetExEdit()
+	uintptr_t GetExEdit()
 	{
 		return m_exedit;
 	}
@@ -318,9 +318,9 @@ public:
 		return *m_layerVisibleCount;
 	}
 
-	LPCSTR GetLayerName(int layerIndex)
+	ExEdit::LayerSetting* GetLayerSetting(int layerIndex)
 	{
-		return *m_layerNameArray + layerIndex * 32 + 4;
+		return (*m_layerSettingArray) + layerIndex;
 	}
 
 	int GetAviUtlFrameNumber()

@@ -86,11 +86,15 @@ public:
 
 		if (m_file)
 		{
+#if 0
 			TCHAR fileSpec[MAX_PATH];
 			::StringCbCopy(fileSpec, sizeof(fileSpec), m_file);
 			::PathStripPath(fileSpec);
 
 			::StringCbPrintf(output, sizeof(output), _T("%s(%d) : %s"), fileSpec, m_line, text);
+#else
+			::StringCbPrintf(output, sizeof(output), _T("%s(%d) : %s"), m_file, m_line, text);
+#endif
 		}
 		else
 		{

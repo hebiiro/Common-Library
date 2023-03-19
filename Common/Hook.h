@@ -19,7 +19,12 @@
 	resultType callType hook_##procName args
 
 #define IMPLEMENT_HOOK_PROC_NULL(resultType, callType, procName, args) \
-	Type_##procName true_##procName = NULL; \
+	Type_##procName true_##procName = 0; \
+	resultType callType hook_##procName args
+
+#define DECLARE_HOOK_PROC(resultType, callType, procName, args) \
+	typedef resultType (callType *Type_##procName) args; \
+	extern Type_##procName true_##procName; \
 	resultType callType hook_##procName args
 
 #define GET_INTERNAL_PROC(module, procName) \
@@ -53,7 +58,7 @@ while (0)
 //---------------------------------------------------------------------
 
 // コードを書き換える。
-inline void writeCode(DWORD address, const BYTE* code, int c)
+inline void writeCode(uintptr_t address, const BYTE* code, int c)
 {
 	// コードを書き換える。そのあと命令キャッシュをフラッシュする。
 	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, code, c, NULL);
@@ -62,14 +67,14 @@ inline void writeCode(DWORD address, const BYTE* code, int c)
 
 // 相対 CALL を書き換える。
 template<class T>
-inline T hookCall(DWORD address, T hookProc)
+inline T hookCall(uintptr_t address, T hookProc)
 {
 	BYTE code[5];
 	code[0] = 0xE8; // CALL
-	*(DWORD*)&code[1] = (DWORD)hookProc - (address + 5);
+	*(uintptr_t*)&code[1] = (uintptr_t)hookProc - (address + 5);
 
 	// 元の関数を取得する。
-	DWORD retValue = 0;
+	uintptr_t retValue = 0;
 	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)(address + 1), &retValue, sizeof(retValue), NULL);
 	retValue += (address + 5);
 
@@ -83,15 +88,15 @@ inline T hookCall(DWORD address, T hookProc)
 
 // 絶対 CALL を書き換える。
 template<class T>
-inline T hookAbsoluteCall(DWORD address, T hookProc)
+inline T hookAbsoluteCall(uintptr_t address, T hookProc)
 {
 	BYTE code[6];
 	code[0] = 0xE8; // CALL
-	*(DWORD*)&code[1] = (DWORD)hookProc - (address + 5);
+	*(uintptr_t*)&code[1] = (uintptr_t)hookProc - (address + 5);
 	code[5] = 0x90; // NOP
 
 	// 元の関数を取得する。
-	DWORD retValue = 0;
+	uintptr_t retValue = 0;
 	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)(address + 2), &retValue, sizeof(retValue), NULL);
 
 	// CALL を書き換える。そのあと命令キャッシュをフラッシュする。
@@ -99,12 +104,12 @@ inline T hookAbsoluteCall(DWORD address, T hookProc)
 	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, sizeof(code));
 
 	// 元の関数を返す。
-	return (T)*(DWORD*)retValue;
+	return (T)*(uintptr_t*)retValue;
 }
 
 // 絶対アドレスを書き換える。
 template<class T>
-inline T writeAbsoluteAddress(DWORD address, T x)
+inline T writeAbsoluteAddress(uintptr_t address, T x)
 {
 	// 元の値を取得する。
 	T retValue = 0;
@@ -120,7 +125,7 @@ inline T writeAbsoluteAddress(DWORD address, T x)
 
 // アドレスをキャストする。
 template<class T>
-inline void castAddress(T& x, DWORD address)
+inline void castAddress(T& x, uintptr_t address)
 {
 	x = (T)address;
 }

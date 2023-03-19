@@ -343,13 +343,23 @@ public:
 
 public:
 
+	SimpleFileMapping()
+		: m_handle(0)
+		, m_buffer(0)
+	{
+	}
+
 	SimpleFileMapping(DWORD size, LPCTSTR name)
 		: m_handle(0)
 		, m_buffer(0)
 	{
-		MY_TRACE(_T("SimpleFileMapping::SimpleFileMapping(%d, %s)\n"), size, name);
+		init(size, name);
+	}
 
-		SEC_COMMIT;
+	void init(DWORD size, LPCTSTR name)
+	{
+		MY_TRACE(_T("SimpleFileMapping::init(%d, %s)\n"), size, name);
+
 		m_handle = ::CreateFileMapping(
 			INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, 0, size, name);
 
