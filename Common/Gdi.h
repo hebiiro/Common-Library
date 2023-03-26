@@ -103,7 +103,7 @@ public:
 		return m_dc;
 	}
 };
-
+#ifdef _UXTHEME_H_
 class UxDC
 {
 public:
@@ -135,7 +135,7 @@ public:
 		return m_dc;
 	}
 };
-
+#endif // _UXTHEME_H_
 class DoubleBufferDC
 {
 public:

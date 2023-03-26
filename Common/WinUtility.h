@@ -334,14 +334,10 @@ public:
 
 //--------------------------------------------------------------------
 
-class SimpleFileMapping
+struct SimpleFileMapping
 {
-public:
-
 	HANDLE m_handle;
 	BYTE* m_buffer;
-
-public:
 
 	SimpleFileMapping()
 		: m_handle(0)
@@ -356,27 +352,9 @@ public:
 		init(size, name);
 	}
 
-	void init(DWORD size, LPCTSTR name)
+	SimpleFileMapping(DWORD desiredAccess, BOOL inheritHandle, LPCTSTR name)
 	{
-		MY_TRACE(_T("SimpleFileMapping::init(%d, %s)\n"), size, name);
-
-		m_handle = ::CreateFileMapping(
-			INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, 0, size, name);
-
-		if (!m_handle)
-		{
-			MY_TRACE(_T("::CreateSimpleFileMapping() failed.\n"));
-			return;
-		}
-
-		m_buffer = (BYTE*)::MapViewOfFile(
-			m_handle, FILE_MAP_WRITE, 0, 0, 0);
-
-		if (!m_buffer)
-		{
-			MY_TRACE(_T("::MapViewOfFile() failed.\n"));
-			return;
-		}
+		open(desiredAccess, inheritHandle, name);
 	}
 
 	~SimpleFileMapping()
@@ -385,10 +363,59 @@ public:
 		::CloseHandle(m_handle), m_handle = 0;
 	}
 
+	BOOL init(DWORD size, LPCTSTR name)
+	{
+		MY_TRACE(_T("SimpleFileMapping::init(%d, %s)\n"), size, name);
+
+		m_handle = ::CreateFileMapping(INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, 0, size, name);
+		if (!m_handle) {
+			MY_TRACE(_T("::CreateFileMapping() failed.\n"));
+			return FALSE;
+		}
+
+		m_buffer = (BYTE*)::MapViewOfFile(m_handle, FILE_MAP_WRITE, 0, 0, 0);
+		if (!m_buffer) {
+			MY_TRACE(_T("::MapViewOfFile() failed.\n"));
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
+	BOOL open(DWORD desiredAccess, BOOL inheritHandle, LPCTSTR name)
+	{
+		MY_TRACE(_T("SimpleFileMapping::open(%s)\n"), name);
+
+		m_handle = ::OpenFileMapping(desiredAccess, inheritHandle, name);
+		if (!m_handle) {
+			MY_TRACE(_T("::OpenFileMapping() failed.\n"));
+			return FALSE;
+		}
+
+		m_buffer = (BYTE*)::MapViewOfFile(m_handle, FILE_MAP_WRITE, 0, 0, 0);
+		if (!m_buffer) {
+			MY_TRACE(_T("::MapViewOfFile() failed.\n"));
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
 	BYTE* getBuffer()
 	{
 		return m_buffer;
 	}
+};
+
+template<typename T>
+struct SimpleFileMappingT : public SimpleFileMapping
+{
+	SimpleFileMappingT(){}
+	SimpleFileMappingT(LPCTSTR name) : SimpleFileMapping(sizeof(T), name){}
+	SimpleFileMappingT(DWORD desiredAccess, BOOL inheritHandle, LPCTSTR name) : SimpleFileMapping(desiredAccess, inheritHandle, name){}
+	~SimpleFileMappingT(){}
+	BOOL init(LPCTSTR name){ return SimpleFileMapping::init(sizeof(T), name); }
+	T* getBuffer(){ return (T*)SimpleFileMapping::getBuffer(); }
 };
 
 //--------------------------------------------------------------------
@@ -566,6 +593,71 @@ public:
 	virtual BOOL unlock()
 	{
 		::LeaveCriticalSection(&m_cs);
+
+		return true;
+	}
+};
+
+class Event : public Sync
+{
+public:
+
+	Event()
+	{
+		m_handle = 0;
+	}
+
+	Event(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCTSTR name)
+	{
+		init(sa, manualReset, initialState, name);
+	}
+
+	Event(DWORD desiredAccess, BOOL inheritHandle, LPCTSTR name)
+	{
+		open(desiredAccess, inheritHandle, name);
+	}
+
+	virtual ~Event()
+	{
+		::CloseHandle(m_handle);
+	}
+
+protected:
+
+	HANDLE m_handle;
+
+public:
+
+	BOOL init(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCTSTR name)
+	{
+		m_handle = ::CreateEvent(sa, manualReset, initialState, name);
+		return isValid();
+	}
+
+	BOOL open(DWORD desiredAccess, BOOL inheritHandle, LPCTSTR name)
+	{
+		m_handle = ::OpenEvent(desiredAccess, inheritHandle, name);
+		return isValid();
+	}
+
+	BOOL isValid() const
+	{
+		return !!m_handle;
+	}
+
+	operator HANDLE() const
+	{
+		return m_handle;
+	}
+
+	virtual DWORD lock(DWORD timeOut = INFINITE)
+	{
+		return ::WaitForSingleObject(m_handle, timeOut);
+	}
+
+	virtual BOOL unlock()
+	{
+		::SetEvent(m_handle);
 
 		return true;
 	}
