@@ -35,11 +35,12 @@ while (0)
 #define MY_TRACE_HWND(hwnd) \
 do \
 { \
+	HWND hwndCache = hwnd; \
 	TCHAR windowText[MAX_PATH] = {}; \
-	::GetWindowText(hwnd, windowText, MAX_PATH); \
+	::GetWindowText(hwndCache, windowText, MAX_PATH); \
 	TCHAR className[MAX_PATH] = {}; \
-	::GetClassName(hwnd, className, MAX_PATH); \
-	MY_TRACE(_T(#hwnd) _T(" = 0x%08X = \"%s\" (%s)\n"), hwnd, windowText, className); \
+	::GetClassName(hwndCache, className, MAX_PATH); \
+	MY_TRACE(_T(#hwnd) _T(" = 0x%08X = \"%s\" (%s)\n"), hwndCache, windowText, className); \
 } \
 while (0)
 

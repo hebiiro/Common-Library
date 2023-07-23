@@ -4,6 +4,7 @@
 
 ## 更新履歴
 
+* 5.0.0 - 2023/07/23 Window
 * 4.5.0 - 2023/03/26 SimpleFileMappingT
 * 4.4.0 - 2023/03/22 ExEdit::LayerSetting
 * 4.3.0 - 2023/02/21 WavPlayer

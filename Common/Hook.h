@@ -1,6 +1,9 @@
 ﻿#pragma once
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------
+#pragma pack(push)
+#pragma pack(1)
+//--------------------------------------------------------------------
 
 #define DECLARE_INTERNAL_PROC(resultType, callType, procName, args) \
 	typedef resultType (callType *Type_##procName) args; \
@@ -55,7 +58,7 @@ do \
 } \
 while (0)
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------
 
 // コードを書き換える。
 inline void writeCode(uintptr_t address, const BYTE* code, int c)
@@ -69,42 +72,66 @@ inline void writeCode(uintptr_t address, const BYTE* code, int c)
 template<class T>
 inline T hookCall(uintptr_t address, T hookProc)
 {
-	BYTE code[5];
-	code[0] = 0xE8; // CALL
-	*(uintptr_t*)&code[1] = (uintptr_t)hookProc - (address + 5);
+	struct {
+		BYTE call;
+		uintptr_t func;
+	} orig = {
+		0xE8, // CALL
+	};
 
 	// 元の関数を取得する。
-	uintptr_t retValue = 0;
-	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)(address + 1), &retValue, sizeof(retValue), NULL);
-	retValue += (address + 5);
+	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)address, &orig, sizeof(orig), NULL);
+
+	if (orig.call != 0xE8)
+		return 0; // 相対 CALL ではなかった。
+
+	struct {
+		BYTE call;
+		uintptr_t func;
+	} code = {
+		0xE8, // CALL
+		(uintptr_t)hookProc - (address + sizeof(code)),
+	};
 
 	// CALL を書き換える。そのあと命令キャッシュをフラッシュする。
-	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, code, sizeof(code), NULL);
+	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, &code, sizeof(code), NULL);
 	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, sizeof(code));
 
 	// 元の関数を返す。
-	return (T)retValue;
+	return (T)(orig.func + (address + sizeof(orig)));
 }
 
 // 絶対 CALL を書き換える。
 template<class T>
 inline T hookAbsoluteCall(uintptr_t address, T hookProc)
 {
-	BYTE code[6];
-	code[0] = 0xE8; // CALL
-	*(uintptr_t*)&code[1] = (uintptr_t)hookProc - (address + 5);
-	code[5] = 0x90; // NOP
+	struct {
+		BYTE call[2];
+		T* func;
+	} orig = {};
 
 	// 元の関数を取得する。
-	uintptr_t retValue = 0;
-	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)(address + 2), &retValue, sizeof(retValue), NULL);
+	::ReadProcessMemory(::GetCurrentProcess(), (LPVOID)address, &orig, sizeof(orig), NULL);
+
+	if (orig.call[0] != 0xFF || orig.call[1] != 0x15)
+		return 0; // 絶対 CALL ではなかった。
+
+	struct {
+		BYTE call;
+		uintptr_t func;
+		BYTE next;
+	} code = {
+		0xE8, // CALL
+		(uintptr_t)hookProc - (address + offsetof(code, next)),
+		0x90, // NOP
+	};
 
 	// CALL を書き換える。そのあと命令キャッシュをフラッシュする。
-	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, code, sizeof(code), NULL);
+	::WriteProcessMemory(::GetCurrentProcess(), (LPVOID)address, &code, sizeof(code), NULL);
 	::FlushInstructionCache(::GetCurrentProcess(), (LPVOID)address, sizeof(code));
 
 	// 元の関数を返す。
-	return (T)*(uintptr_t*)retValue;
+	return *orig.func;
 }
 
 // 絶対アドレスを書き換える。
@@ -130,7 +157,7 @@ inline void castAddress(T& x, uintptr_t address)
 	x = (T)address;
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------
 
 template<class T>
 T hookImportFunc(HMODULE module, LPCSTR funcName, T func)
@@ -169,7 +196,7 @@ T hookImportFunc(HMODULE module, LPCSTR funcName, T func)
 	return hooker.m_oldFunc;
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------
 
 template<class T>
 T rewriteFunction(DWORD base, LPCSTR funcName, T func)
@@ -209,4 +236,6 @@ T rewriteFunction(DWORD base, LPCSTR funcName, T func)
 	return NULL;
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------
+#pragma pack(pop)
+//--------------------------------------------------------------------

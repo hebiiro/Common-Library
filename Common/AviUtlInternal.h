@@ -367,6 +367,21 @@ public:
 
 public:
 
+	static int GetFilterIndex(ExEdit::Object* object, int filterId)
+	{
+		if (!object) return -1;
+
+		int c = object->countFilters();
+
+		for (int i = 0; i < c; i++)
+		{
+			if (object->filter_param[i].id == filterId)
+				return i;
+		}
+
+		return -1;
+	}
+
 	static DWORD ExdataOffset(ExEdit::Object* object, int idx)
 	{
 		return object->exdata_offset + object->filter_param[idx].exdata_offset;

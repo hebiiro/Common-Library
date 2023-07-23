@@ -13,6 +13,14 @@ inline HRESULT WINAPI getPrivateProfileBSTR(LPCWSTR fileName, LPCWSTR appName, L
 }
 
 template<class T>
+inline HRESULT WINAPI getPrivateProfileString(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, T& outValue)
+{
+	DWORD result = ::GetPrivateProfileStringW(appName, keyName, outValue, outValue, std::size(outValue), fileName);
+	if (!result) return S_FALSE;
+	return S_OK;
+}
+
+template<class T>
 inline HRESULT WINAPI getPrivateProfileInt(LPCWSTR fileName, LPCWSTR appName, LPCWSTR keyName, T& outValue, int radix = 0)
 {
 	_bstr_t value = L"";
@@ -446,6 +454,34 @@ inline HRESULT WINAPI getPrivateProfileLabel(LPCWSTR fileName, LPCWSTR appName, 
 	return S_FALSE;
 }
 
+inline HRESULT getPrivateProfileWindow(LPCWSTR fileName, LPCWSTR name, HWND hwnd, DWORD cmdShow = -1)
+{
+	WINDOWPLACEMENT wp = { sizeof(wp) };
+	if (!::GetWindowPlacement(hwnd, &wp)) return S_FALSE;
+	if (!::IsWindowVisible(hwnd)) wp.showCmd = SW_HIDE;
+	wp.flags = WPF_SETMINPOSITION;
+
+	if (cmdShow == -1)
+		getPrivateProfileInt(fileName, name, L"flags", wp.showCmd);
+	else
+		wp.showCmd = cmdShow;
+
+	getPrivateProfileInt(fileName, name, L"left", wp.rcNormalPosition.left);
+	getPrivateProfileInt(fileName, name, L"top", wp.rcNormalPosition.top);
+	getPrivateProfileInt(fileName, name, L"right", wp.rcNormalPosition.right);
+	getPrivateProfileInt(fileName, name, L"bottom", wp.rcNormalPosition.bottom);
+
+	getPrivateProfileInt(fileName, name, L"minX", wp.ptMinPosition.x);
+	getPrivateProfileInt(fileName, name, L"minY", wp.ptMinPosition.y);
+	getPrivateProfileInt(fileName, name, L"maxX", wp.ptMaxPosition.x);
+	getPrivateProfileInt(fileName, name, L"maxY", wp.ptMaxPosition.y);
+
+	if (!::SetWindowPlacement(hwnd, &wp))
+		return S_FALSE;
+
+	return S_OK;
+}
+
 //---------------------------------------------------------------------
 // Set
 
@@ -519,6 +555,30 @@ inline HRESULT WINAPI setPrivateProfileLabel(LPCWSTR fileName, LPCWSTR appName, 
 	}
 
 	return S_FALSE;
+}
+
+inline HRESULT setPrivateProfileWindow(LPCWSTR fileName, LPCWSTR name, HWND hwnd, DWORD cmdShow = -1)
+{
+	WINDOWPLACEMENT wp = { sizeof(wp) };
+	if (!::GetWindowPlacement(hwnd, &wp)) return E_FAIL;
+
+	if (::IsIconic(hwnd)) wp.showCmd = SW_SHOW;
+	if (wp.flags == WPF_RESTORETOMAXIMIZED) wp.showCmd = SW_SHOWMAXIMIZED;
+	if (!::IsWindowVisible(hwnd)) wp.showCmd = SW_HIDE;
+
+	setPrivateProfileInt(fileName, name, L"flags", (cmdShow == -1) ? wp.showCmd : cmdShow);
+
+	setPrivateProfileInt(fileName, name, L"left", wp.rcNormalPosition.left);
+	setPrivateProfileInt(fileName, name, L"top", wp.rcNormalPosition.top);
+	setPrivateProfileInt(fileName, name, L"right", wp.rcNormalPosition.right);
+	setPrivateProfileInt(fileName, name, L"bottom", wp.rcNormalPosition.bottom);
+
+	setPrivateProfileInt(fileName, name, L"minX", wp.ptMinPosition.x);
+	setPrivateProfileInt(fileName, name, L"minY", wp.ptMinPosition.y);
+	setPrivateProfileInt(fileName, name, L"maxX", wp.ptMaxPosition.x);
+	setPrivateProfileInt(fileName, name, L"maxY", wp.ptMaxPosition.y);
+
+	return S_OK;
 }
 
 //---------------------------------------------------------------------

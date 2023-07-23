@@ -1,10 +1,8 @@
 ﻿#pragma once
-
 #ifdef _DEBUG
+inline HANDLE g_traceFile = 0;
 
-HANDLE g_traceFile = 0;
-
-void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
+inline void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 {
 	// dll\$dll@exe[name].txt
 
@@ -35,7 +33,6 @@ void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 
 	g_traceFile = ::CreateFile(reportFilePath, GENERIC_WRITE,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 0, 0);
-
 #ifdef _UNICODE
 	if (addBom)
 	{
@@ -46,30 +43,27 @@ void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 #endif
 }
 
-void trace_term()
+inline void trace_term()
 {
 	::CloseHandle(g_traceFile), g_traceFile = 0;
 }
 
-void ___outputLog(LPCTSTR text, LPCTSTR output)
+inline void ___outputLog(LPCTSTR text, LPCTSTR output)
 {
 	DWORD cbLength = (DWORD)(::lstrlen(output) * sizeof(TCHAR));
 	DWORD writeSize = 0;
 	::WriteFile(g_traceFile, output, cbLength, &writeSize, 0);
 }
-
 #else
-
-void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
+inline void trace_init(HINSTANCE instance, LPCTSTR name, BOOL addBom = FALSE)
 {
 }
 
-void trace_term()
+inline void trace_term()
 {
 }
 
-void ___outputLog(LPCTSTR text, LPCTSTR output)
+inline void ___outputLog(LPCTSTR text, LPCTSTR output)
 {
 }
-
 #endif

@@ -116,7 +116,7 @@ public:
 
 	UxDC(HDC dc, LPCRECT rc, BP_BUFFERFORMAT format = BPBF_COMPATIBLEBITMAP)
 	{
-		m_pb = ::BeginBufferedPaint(dc, rc, BPBF_COMPATIBLEBITMAP, &m_pp, &m_dc);
+		m_pb = ::BeginBufferedPaint(dc, rc, format, &m_pp, &m_dc);
 	}
 
 	~UxDC()
